@@ -8,35 +8,57 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Finivera Futuristic Finance Theme */
+    --background: 220 30% 8%;
+    --foreground: 200 15% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 220 25% 12%;
+    --card-foreground: 200 15% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 220 25% 12%;
+    --popover-foreground: 200 15% 95%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 195 100% 55%;
+    --primary-foreground: 220 30% 8%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 25% 15%;
+    --secondary-foreground: 200 15% 95%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 20% 18%;
+    --muted-foreground: 200 10% 70%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 180 100% 50%;
+    --accent-foreground: 220 30% 8%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 200 15% 95%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 20% 20%;
+    --input: 220 20% 18%;
+    --ring: 195 100% 55%;
 
-    --radius: 0.5rem;
+    /* Finivera Custom Colors */
+    --electric-blue: 195 100% 55%;
+    --neon-teal: 180 100% 50%;
+    --deep-navy: 220 30% 8%;
+    --chart-green: 120 100% 45%;
+    --warning-orange: 35 100% 55%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--electric-blue)), hsl(var(--neon-teal)));
+    --gradient-card: linear-gradient(145deg, hsl(var(--card)), hsl(220 25% 14%));
+    --gradient-hero: linear-gradient(180deg, transparent, hsl(var(--deep-navy) / 0.95));
+
+    /* Glows and Effects */
+    --glow-primary: 0 0 30px hsl(var(--electric-blue) / 0.3);
+    --glow-accent: 0 0 20px hsl(var(--neon-teal) / 0.4);
+    --shadow-elevated: 0 10px 40px hsl(220 30% 4% / 0.5);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-glow: box-shadow 0.3s ease;
+
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -101,5 +123,25 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+}
+
+/* Custom animations */
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px hsl(var(--electric-blue) / 0.3);
+  }
+  to {
+    box-shadow: 0 0 30px hsl(var(--electric-blue) / 0.6);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
   }
 }
