@@ -51,10 +51,20 @@ const Hero = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button variant="hero" size="lg" className="text-lg px-10 py-4">
+            <Button 
+              variant="hero" 
+              size="lg" 
+              className="text-lg px-10 py-4"
+              onClick={() => document.getElementById('ai-chat')?.scrollIntoView({ behavior: 'smooth' })}
+            >
               Start Free Chat
             </Button>
-            <Button variant="glow" size="lg" className="text-lg px-10 py-4">
+            <Button 
+              variant="glow" 
+              size="lg" 
+              className="text-lg px-10 py-4"
+              onClick={() => document.getElementById('booking-form')?.scrollIntoView({ behavior: 'smooth' })}
+            >
               Book Consultation
             </Button>
           </div>

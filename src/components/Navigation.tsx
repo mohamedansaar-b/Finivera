@@ -19,8 +19,10 @@ const Navigation = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-electric-blue to-neon-teal rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">F</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-electric-blue via-neon-teal to-chart-green rounded-xl flex items-center justify-center shadow-lg shadow-electric-blue/30 border border-electric-blue/20">
+              <div className="w-6 h-6 bg-white rounded-md flex items-center justify-center">
+                <div className="w-3 h-3 bg-gradient-to-br from-electric-blue to-neon-teal rounded-sm"></div>
+              </div>
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-electric-blue to-neon-teal bg-clip-text text-transparent">
               Finivera
@@ -30,19 +32,35 @@ const Navigation = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navItems.map((item) => (
-              <a
+              <button
                 key={item.name}
-                href={item.href}
+                onClick={() => {
+                  if (item.href === '/') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  } else if (item.href === '/ai-advisor') {
+                    document.getElementById('ai-chat')?.scrollIntoView({ behavior: 'smooth' });
+                  } else if (item.href === '/forex') {
+                    document.getElementById('forex-dashboard')?.scrollIntoView({ behavior: 'smooth' });
+                  } else if (item.href === '/risk-monitor') {
+                    document.getElementById('risk-monitor')?.scrollIntoView({ behavior: 'smooth' });
+                  } else if (item.href === '/contact') {
+                    document.getElementById('booking-form')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
                 className="text-foreground hover:text-electric-blue transition-colors"
               >
                 {item.name}
-              </a>
+              </button>
             ))}
           </div>
 
           {/* CTA Button */}
           <div className="hidden md:block">
-            <Button variant="hero" size="lg">
+            <Button 
+              variant="hero" 
+              size="lg"
+              onClick={() => document.getElementById('ai-chat')?.scrollIntoView({ behavior: 'smooth' })}
+            >
               Start Free Chat
             </Button>
           </div>
@@ -59,17 +77,38 @@ const Navigation = () => {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden mt-4 pb-4 border-t border-border">
-            <div className="flex flex-col space-y-4 pt-4">
+              <div className="flex flex-col space-y-4 pt-4">
               {navItems.map((item) => (
-                <a
+                <button
                   key={item.name}
-                  href={item.href}
-                  className="text-foreground hover:text-electric-blue transition-colors"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    if (item.href === '/') {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else if (item.href === '/ai-advisor') {
+                      document.getElementById('ai-chat')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/forex') {
+                      document.getElementById('forex-dashboard')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/risk-monitor') {
+                      document.getElementById('risk-monitor')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/contact') {
+                      document.getElementById('booking-form')?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  className="text-foreground hover:text-electric-blue transition-colors text-left"
                 >
                   {item.name}
-                </a>
+                </button>
               ))}
-              <Button variant="hero" size="lg" className="w-full">
+              <Button 
+                variant="hero" 
+                size="lg" 
+                className="w-full"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  document.getElementById('ai-chat')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
                 Start Free Chat
               </Button>
             </div>
