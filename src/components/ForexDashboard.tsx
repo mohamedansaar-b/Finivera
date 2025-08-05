@@ -5,16 +5,16 @@ import ForexChart from './ForexChart';
 const ForexDashboard = () => {
   // Mock forex data for USD/INR prediction
   const forexData = [
-    { date: 'Jan 15', rate: 83.1 },
-    { date: 'Jan 16', rate: 83.2 },
-    { date: 'Jan 17', rate: 83.0 },
-    { date: 'Jan 18', rate: 83.3 },
-    { date: 'Jan 19', rate: 83.4 },
-    { date: 'Jan 20', rate: 83.6 },
-    { date: 'Jan 21', rate: 83.5 },
-    { date: 'Jan 22', rate: 83.7 },
-    { date: 'Jan 23', rate: 83.8 },
-    { date: 'Jan 24', rate: 83.8 },
+    { date: 'Aug 15', rate: 83.1 },
+    { date: 'Aug 16', rate: 83.2 },
+    { date: 'Aug 17', rate: 83.0 },
+    { date: 'Aug 18', rate: 83.3 },
+    { date: 'Aug 19', rate: 83.4 },
+    { date: 'Aug 20', rate: 83.6 },
+    { date: 'Aug 21', rate: 83.5 },
+    { date: 'Aug 22', rate: 83.7 },
+    { date: 'Aug 23', rate: 83.8 },
+    { date: 'Aug 24', rate: 83.8 },
   ];
 
   const currentRate = 83.1;

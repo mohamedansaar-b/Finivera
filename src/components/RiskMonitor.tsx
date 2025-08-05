@@ -19,47 +19,47 @@ const RiskMonitor = () => {
     india: {
       name: 'India',
       code: 'IN',
-      gdpGrowth: [6.1, 4.2, -6.6, 8.7, 6.8],
-      currentGdp: 6.8,
+      gdpGrowth: [7.0, 6.3, 6.8, 7.2, 7.5],
+      currentGdp: 7.5,
       riskLevel: 'low',
       outlook: 'Stable growth expected with strong domestic demand'
     },
     usa: {
       name: 'United States',
       code: 'US',
-      gdpGrowth: [2.9, 2.3, -3.4, 5.7, 2.1],
-      currentGdp: 2.1,
+      gdpGrowth: [2.1, 2.5, 2.8, 3.1, 2.9],
+      currentGdp: 2.9,
       riskLevel: 'medium',
       outlook: 'Moderate growth amid inflation concerns'
     },
     china: {
       name: 'China',
       code: 'CN',
-      gdpGrowth: [6.7, 6.9, 2.2, 8.4, 3.0],
-      currentGdp: 3.0,
+      gdpGrowth: [3.0, 5.2, 4.8, 5.0, 4.5],
+      currentGdp: 4.5,
       riskLevel: 'medium',
       outlook: 'Slowing growth due to property sector challenges'
     },
     germany: {
       name: 'Germany',
       code: 'DE',
-      gdpGrowth: [2.2, 0.6, -4.6, 2.6, 1.8],
-      currentGdp: 1.8,
+      gdpGrowth: [1.8, -0.3, 1.2, 1.8, 2.1],
+      currentGdp: 2.1,
       riskLevel: 'medium',
       outlook: 'Energy transition creating short-term headwinds'
     },
     japan: {
       name: 'Japan',
       code: 'JP',
-      gdpGrowth: [0.8, 0.3, -4.5, 1.7, 1.0],
-      currentGdp: 1.0,
+      gdpGrowth: [1.7, 1.0, 1.3, 1.5, 1.8],
+      currentGdp: 1.8,
       riskLevel: 'high',
       outlook: 'Aging population constraining long-term growth'
     }
   };
 
   const selectedData = countryData[selectedCountry];
-  const years = ['2019', '2020', '2021', '2022', '2023'];
+  const years = ['2021', '2022', '2023', '2024', '2025'];
 
   const getRiskColor = (level: string) => {
     switch (level) {

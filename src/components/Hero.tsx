@@ -37,7 +37,7 @@ const Hero = () => {
           <div className="flex flex-wrap justify-center gap-4 mb-10">
             <div className="flex items-center gap-2 bg-card/70 backdrop-blur-sm border border-electric-blue/30 rounded-full px-6 py-3">
               <Brain className="w-5 h-5 text-electric-blue" />
-              <span className="text-sm font-medium">ChatGPT Integration</span>
+              <span className="text-sm font-medium">AI Advisor</span>
             </div>
             <div className="flex items-center gap-2 bg-card/70 backdrop-blur-sm border border-neon-teal/30 rounded-full px-6 py-3">
               <TrendingUp className="w-5 h-5 text-neon-teal" />

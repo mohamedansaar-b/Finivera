@@ -9,9 +9,16 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand Section */}
           <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center space-x-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-electric-blue to-neon-teal rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">F</span>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="relative">
+                <div className="w-12 h-12 bg-gradient-to-br from-electric-blue via-neon-teal to-electric-blue rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="w-7 h-7 border-2 border-white rounded-sm relative">
+                    <div className="absolute inset-1 bg-white rounded-xs opacity-80"></div>
+                    <div className="absolute top-1 left-1 w-1 h-1 bg-electric-blue rounded-full"></div>
+                    <div className="absolute bottom-1 right-1 w-1 h-1 bg-neon-teal rounded-full"></div>
+                  </div>
+                </div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-neon-teal to-electric-blue rounded-full opacity-75 animate-pulse"></div>
               </div>
               <span className="text-3xl font-bold bg-gradient-to-r from-electric-blue to-neon-teal bg-clip-text text-transparent">
                 Finivera

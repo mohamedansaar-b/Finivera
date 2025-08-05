@@ -37,25 +37,41 @@ const AIChat = () => {
     setInputMessage('');
     setIsLoading(true);
 
-    // Simulate AI response (replace with actual OpenAI integration)
-    setTimeout(() => {
-      const responses = [
-        "Based on your query, I'd recommend diversifying your portfolio across equity mutual funds (60%), debt funds (30%), and gold ETFs (10%). This balanced approach can help manage risk while targeting growth.",
-        "For students in India, starting a SIP (Systematic Investment Plan) with as little as ₹500 per month in index funds is a great way to build wealth. Consider tax-saving ELSS funds for Section 80C benefits.",
-        "Current market conditions suggest a cautious approach. Focus on quality large-cap stocks and avoid high-risk investments until market volatility decreases.",
-        "For emergency funds, keep 6-12 months of expenses in liquid funds or high-yield savings accounts. This ensures easy access while earning better returns than traditional savings accounts."
-      ];
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: inputMessage }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get AI response');
+      }
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'bot',
-        content: responses[Math.floor(Math.random() * responses.length)],
+        content: data.response,
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'bot',
+        content: 'Sorry, I encountered an error. Please try again later.',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
 
   return (
