@@ -11,14 +11,31 @@ const Footer = () => {
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
               <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-br from-electric-blue via-neon-teal to-electric-blue rounded-xl flex items-center justify-center shadow-lg">
-                  <div className="w-7 h-7 border-2 border-white rounded-sm relative">
-                    <div className="absolute inset-1 bg-white rounded-xs opacity-80"></div>
-                    <div className="absolute top-1 left-1 w-1 h-1 bg-electric-blue rounded-full"></div>
-                    <div className="absolute bottom-1 right-1 w-1 h-1 bg-neon-teal rounded-full"></div>
+                {/* Modern futuristic logo */}
+                <div className="w-12 h-12 bg-gradient-to-br from-electric-blue via-neon-teal to-electric-blue rounded-xl flex items-center justify-center shadow-lg relative overflow-hidden">
+                  {/* Circuit pattern background */}
+                  <div className="absolute inset-0 opacity-20">
+                    <div className="absolute top-2 left-2 w-1 h-1 bg-white rounded-full"></div>
+                    <div className="absolute top-2 right-2 w-1 h-1 bg-white rounded-full"></div>
+                    <div className="absolute bottom-2 left-2 w-1 h-1 bg-white rounded-full"></div>
+                    <div className="absolute bottom-2 right-2 w-1 h-1 bg-white rounded-full"></div>
+                    <div className="absolute top-2 left-2 w-8 h-0.5 bg-gradient-to-r from-white to-transparent"></div>
+                    <div className="absolute left-2 top-2 w-0.5 h-8 bg-gradient-to-b from-white to-transparent"></div>
+                  </div>
+                  
+                  {/* Main logo element */}
+                  <div className="relative">
+                    <div className="w-6 h-6 border-2 border-white rounded-sm bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm">
+                      <div className="absolute inset-0.5 bg-gradient-to-br from-electric-blue to-neon-teal opacity-60 rounded-xs"></div>
+                      <div className="absolute top-1 left-1 w-1 h-1 bg-white rounded-full shadow-sm"></div>
+                      <div className="absolute bottom-1 right-1 w-1 h-1 bg-white rounded-full shadow-sm"></div>
+                    </div>
                   </div>
                 </div>
+                
+                {/* Glowing accent */}
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-neon-teal to-electric-blue rounded-full opacity-75 animate-pulse"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-electric-blue/20 to-neon-teal/20 rounded-xl blur-lg scale-110 -z-10"></div>
               </div>
               <span className="text-3xl font-bold bg-gradient-to-r from-electric-blue to-neon-teal bg-clip-text text-transparent">
                 Finivera

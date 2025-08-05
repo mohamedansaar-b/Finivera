@@ -3,18 +3,20 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import ForexChart from './ForexChart';
 
 const ForexDashboard = () => {
-  // Mock forex data for USD/INR prediction
+  // Mock forex data for USD/INR prediction (July-August 2025)
   const forexData = [
-    { date: 'Aug 15', rate: 83.1 },
-    { date: 'Aug 16', rate: 83.2 },
-    { date: 'Aug 17', rate: 83.0 },
-    { date: 'Aug 18', rate: 83.3 },
-    { date: 'Aug 19', rate: 83.4 },
-    { date: 'Aug 20', rate: 83.6 },
-    { date: 'Aug 21', rate: 83.5 },
-    { date: 'Aug 22', rate: 83.7 },
-    { date: 'Aug 23', rate: 83.8 },
-    { date: 'Aug 24', rate: 83.8 },
+    { date: 'Jul 25', rate: 82.8 },
+    { date: 'Jul 26', rate: 82.9 },
+    { date: 'Jul 27', rate: 82.7 },
+    { date: 'Jul 28', rate: 83.0 },
+    { date: 'Jul 29', rate: 83.1 },
+    { date: 'Jul 30', rate: 83.2 },
+    { date: 'Jul 31', rate: 83.0 },
+    { date: 'Aug 1', rate: 83.3 },
+    { date: 'Aug 2', rate: 83.4 },
+    { date: 'Aug 3', rate: 83.6 },
+    { date: 'Aug 4', rate: 83.5 },
+    { date: 'Aug 5', rate: 83.7 },
   ];
 
   const currentRate = 83.1;
