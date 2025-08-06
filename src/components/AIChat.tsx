@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Send, Bot, User } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -38,18 +39,12 @@ const AIChat = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: inputMessage }),
+      const { data, error } = await supabase.functions.invoke('chat', {
+        body: { message: inputMessage }
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to get AI response');
+      if (error) {
+        throw new Error(error.message || 'Failed to get AI response');
       }
 
       const botMessage: Message = {
