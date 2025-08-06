@@ -16,7 +16,7 @@ serve(async (req) => {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${Deno.env.get('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')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
