@@ -1,7 +1,11 @@
 import Navigation from '@/components/Navigation';
 import Hero from '@/components/Hero';
 import AIChat from '@/components/AIChat';
-import ForexDashboard from '@/components/ForexDashboard';
+import EnhancedForexDashboard from '@/components/EnhancedForexDashboard';
+import SmartExpenseBreakdown from '@/components/SmartExpenseBreakdown';
+import EconomicEventCalendar from '@/components/EconomicEventCalendar';
+import AIMarketSummary from '@/components/AIMarketSummary';
+import FinancialGoalTracker from '@/components/FinancialGoalTracker';
 import RiskMonitor from '@/components/RiskMonitor';
 import BookingForm from '@/components/BookingForm';
 import Footer from '@/components/Footer';
@@ -12,7 +16,11 @@ const Index = () => {
       <Navigation />
       <Hero />
       <AIChat />
-      <ForexDashboard />
+      <EnhancedForexDashboard />
+      <AIMarketSummary />
+      <SmartExpenseBreakdown />
+      <EconomicEventCalendar />
+      <FinancialGoalTracker />
       <RiskMonitor />
       <BookingForm />
       <Footer />
