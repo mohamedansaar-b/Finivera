@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
@@ -31,22 +31,67 @@ const EnhancedForexDashboard = () => {
   const [toCurrency, setToCurrency] = useState('INR');
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(new Date(Date.now() + 10 * 24 * 60 * 60 * 1000));
-  const [volatility] = useState<'low' | 'medium' | 'high'>('medium');
+  // Utilities and generated data based on selection
+  const getCurrencySymbol = (code: string) => {
+    switch (code) {
+      case 'INR': return '₹';
+      case 'USD': return '$';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'JPY': return '¥';
+      case 'CAD': return 'C$';
+      case 'AUD': return 'A$';
+      default: return '';
+    }
+  };
 
-  // Mock data - would be replaced with real API calls
-  const forexData = [
-    { date: '2024-01-15', rate: 83.25 },
-    { date: '2024-01-16', rate: 83.40 },
-    { date: '2024-01-17', rate: 83.15 },
-    { date: '2024-01-18', rate: 83.60 },
-    { date: '2024-01-19', rate: 83.45 },
-    { date: '2024-01-20', rate: 83.75 },
-    { date: '2024-01-21', rate: 83.90 },
-  ];
+  const getBaseRate = (from: string, to: string) => {
+    const key = `${from}${to}`;
+    const map: Record<string, number> = {
+      USDINR: 83.6,
+      EURUSD: 1.09,
+      GBPUSD: 1.27,
+      USDJPY: 148.3,
+      USDCAD: 1.35,
+      AUDUSD: 0.66,
+      EURINR: 91.3,
+      GBPINR: 106.5,
+      JPYINR: 0.56,
+      CADINR: 62.0,
+      AUDINR: 55.2,
+    };
+    return map[key] ?? 1.0;
+  };
 
-  const currentRate = 83.45;
-  const predictedRate = 83.90;
+  const toISO = (d: Date) => d.toISOString().slice(0,10);
+
+  const generateForexData = (start?: Date, end?: Date, base = 1.0) => {
+    const s = start ? new Date(start) : new Date();
+    const e = end && end > s ? new Date(end) : new Date(s.getTime() + 10 * 24 * 60 * 60 * 1000);
+    const days = Math.ceil((e.getTime() - s.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    let rate = base;
+    const data: { date: string; rate: number }[] = [];
+    for (let i = 0; i < days; i++) {
+      const date = new Date(s.getTime() + i * 24 * 60 * 60 * 1000);
+      // simple random walk around base
+      const drift = 0.0002; // ~0.02%
+      const shock = (Math.random() - 0.5) * 0.004; // +-0.2%
+      rate = rate * (1 + drift + shock);
+      data.push({ date: toISO(date), rate: Number(rate.toFixed(4)) });
+    }
+    return data;
+  };
+
+  const baseRate = getBaseRate(fromCurrency, toCurrency);
+  const forexData = useMemo(() => generateForexData(startDate, endDate, baseRate), [startDate, endDate, baseRate]);
+
+  const currentRate = forexData.length ? forexData[forexData.length - 1].rate : baseRate;
+  const returns = forexData.slice(1).map((d, i) => (d.rate - forexData[i].rate) / forexData[i].rate);
+  const avg = returns.length ? returns.reduce((a, b) => a + b, 0) / returns.length : 0;
+  const std = returns.length ? Math.sqrt(returns.reduce((s, r) => s + Math.pow(r - avg, 2), 0) / returns.length) : 0;
+  const predictedRate = Number((currentRate * (1 + avg)).toFixed(4));
   const changePercent = ((predictedRate - currentRate) / currentRate * 100).toFixed(2);
+  const volatility: 'low' | 'medium' | 'high' = std < 0.003 ? 'low' : std < 0.007 ? 'medium' : 'high';
 
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8">
@@ -173,7 +218,7 @@ const EnhancedForexDashboard = () => {
               <TrendingUp className="h-4 w-4 text-electric-blue" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">₹{currentRate}</div>
+              <div className="text-2xl font-bold text-foreground">{getCurrencySymbol(toCurrency)}{currentRate}</div>
               <p className="text-xs text-muted-foreground">{fromCurrency}/{toCurrency}</p>
             </CardContent>
           </Card>
@@ -184,7 +229,7 @@ const EnhancedForexDashboard = () => {
               <BarChart3 className="h-4 w-4 text-neon-teal" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">₹{predictedRate}</div>
+              <div className="text-2xl font-bold text-foreground">{getCurrencySymbol(toCurrency)}{predictedRate}</div>
               <p className={`text-xs ${Number(changePercent) >= 0 ? 'text-chart-green' : 'text-destructive'}`}>
                 {Number(changePercent) >= 0 ? '+' : ''}{changePercent}% change
               </p>
@@ -227,7 +272,7 @@ const EnhancedForexDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ForexChart data={forexData} />
+            <ForexChart data={forexData} pairLabel={`${fromCurrency}/${toCurrency} Rate`} currencySymbol={getCurrencySymbol(toCurrency)} />
           </CardContent>
         </Card>
       </div>

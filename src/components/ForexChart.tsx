@@ -6,15 +6,17 @@ interface ForexChartProps {
     date: string;
     rate: number;
   }>;
+  pairLabel?: string;
+  currencySymbol?: string;
 }
 
-const ForexChart = ({ data }: ForexChartProps) => {
-  const chartConfig = {
-    rate: {
-      label: "USD/INR Rate",
-      color: "hsl(var(--electric-blue))",
-    },
-  };
+const ForexChart = ({ data, pairLabel, currencySymbol }: ForexChartProps) => {
+const chartConfig = {
+  rate: {
+    label: pairLabel ?? "Exchange Rate",
+    color: "hsl(var(--electric-blue))",
+  },
+};
 
   return (
     <ChartContainer config={chartConfig} className="h-[400px] w-full">
@@ -24,17 +26,17 @@ const ForexChart = ({ data }: ForexChartProps) => {
           dataKey="date" 
           className="fill-muted-foreground text-xs"
         />
-        <YAxis 
+<YAxis 
           domain={['dataMin - 0.1', 'dataMax + 0.1']}
           className="fill-muted-foreground text-xs"
-          tickFormatter={(value) => `₹${value}`}
+          tickFormatter={(value) => currencySymbol ? `${currencySymbol}${value}` : `${value}`}
         />
-        <ChartTooltip 
+<ChartTooltip 
           content={<ChartTooltipContent 
             labelFormatter={(value) => `Date: ${value}`}
             formatter={(value, name) => [
-              `₹${Number(value).toFixed(2)}`,
-              'USD/INR Rate'
+              `${currencySymbol ?? ''}${Number(value).toFixed(2)}`,
+              pairLabel ?? 'Exchange Rate'
             ]}
           />} 
         />

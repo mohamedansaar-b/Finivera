@@ -2,59 +2,65 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Calendar, TrendingUp, AlertTriangle, Info } from 'lucide-react';
 
+const addDaysISO = (days: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0,10);
+};
+
 const economicEvents = [
   {
-    date: '2024-01-25',
+    date: addDaysISO(1),
     time: '20:30',
-    event: 'US GDP Growth Rate (Q4)',
+    event: 'US GDP Growth Rate (Q3, 2nd Est.)',
     importance: 'high',
     country: 'US',
-    impact: 'Strong GDP growth could strengthen USD against INR, potentially reducing exchange rate by 0.5-1%',
+    impact: 'Stronger GDP could lift USD; watch USD/INR for a 0.3-0.8% move.',
     currency: 'USD/INR'
   },
   {
-    date: '2024-01-26',
+    date: addDaysISO(2),
     time: '18:30',
     event: 'ECB Interest Rate Decision',
     importance: 'high',
     country: 'EU',
-    impact: 'Rate cuts expected. EUR weakness may indirectly affect USD/INR dynamics',
+    impact: 'Dovish tone may weaken EUR and indirectly support USD; monitor EUR/USD and USD/INR cross-effects.',
     currency: 'EUR/USD'
   },
   {
-    date: '2024-01-27',
+    date: addDaysISO(3),
     time: '14:00',
     event: 'RBI Monetary Policy Meeting',
     importance: 'high',
     country: 'IN',
-    impact: 'If RBI holds rates steady, INR may strengthen slightly against USD',
+    impact: 'Status quo could firm INR modestly; a surprise cut may push USD/INR higher.',
     currency: 'USD/INR'
   },
   {
-    date: '2024-01-28',
+    date: addDaysISO(4),
     time: '21:30',
     event: 'US Core PCE Price Index',
     importance: 'medium',
     country: 'US',
-    impact: 'Higher inflation could support USD strength, increasing USD/INR rate',
+    impact: 'Hotter inflation supports USD; cooler print could soften USD into week-end.',
     currency: 'USD/INR'
   },
   {
-    date: '2024-01-29',
+    date: addDaysISO(5),
     time: '16:00',
-    event: 'Indian Manufacturing PMI',
+    event: 'India Manufacturing PMI',
     importance: 'medium',
     country: 'IN',
-    impact: 'Strong PMI data could boost investor confidence in INR',
+    impact: 'Strong PMI typically supports INR on growth optimism.',
     currency: 'USD/INR'
   },
   {
-    date: '2024-01-30',
+    date: addDaysISO(6),
     time: '22:00',
-    event: 'US Employment Report',
+    event: 'US Nonfarm Payrolls',
     importance: 'high',
     country: 'US',
-    impact: 'Strong job growth typically strengthens USD. Monitor for 0.3-0.7% impact on USD/INR',
+    impact: 'Beat may strengthen USD; miss could weigh on USD and ease USD/INR.',
     currency: 'USD/INR'
   }
 ];
