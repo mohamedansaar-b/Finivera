@@ -8,7 +8,11 @@ const Navigation = () => {
   const navItems = [
     { name: 'Home', href: '/' },
     { name: 'AI Advisor', href: '/ai-advisor' },
-    { name: 'Forex', href: '/forex' },
+    { name: 'Forex Prediction', href: '/forex' },
+    { name: 'Market Summary', href: '/market-summary' },
+    { name: 'Expense Tracker', href: '/expense-tracker' },
+    { name: 'Economic Calendar', href: '/economic-calendar' },
+    { name: 'Goal Tracker', href: '/goal-tracker' },
     { name: 'Risk Monitor', href: '/risk-monitor' },
     { name: 'Contact', href: '/contact' },
   ];
@@ -30,44 +34,54 @@ const Navigation = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => {
-                  if (item.href === '/') {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  } else if (item.href === '/ai-advisor') {
-                    document.getElementById('ai-chat')?.scrollIntoView({ behavior: 'smooth' });
-                  } else if (item.href === '/forex') {
-                    document.getElementById('forex-dashboard')?.scrollIntoView({ behavior: 'smooth' });
-                  } else if (item.href === '/risk-monitor') {
-                    document.getElementById('risk-monitor')?.scrollIntoView({ behavior: 'smooth' });
-                  } else if (item.href === '/contact') {
-                    document.getElementById('booking-form')?.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }}
-                className="text-foreground hover:text-electric-blue transition-colors"
-              >
-                {item.name}
-              </button>
-            ))}
+          <div className="hidden lg:flex items-center overflow-x-auto scrollbar-hide">
+            <div className="flex items-center space-x-4 min-w-max">
+              {navItems.map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => {
+                    if (item.href === '/') {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else if (item.href === '/ai-advisor') {
+                      document.getElementById('ai-chat')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/forex') {
+                      document.getElementById('forex-dashboard')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/market-summary') {
+                      document.getElementById('ai-market-summary')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/expense-tracker') {
+                      document.getElementById('expense-breakdown')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/economic-calendar') {
+                      document.getElementById('economic-calendar')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/goal-tracker') {
+                      document.getElementById('goal-tracker')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/risk-monitor') {
+                      document.getElementById('risk-monitor')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/contact') {
+                      document.getElementById('booking-form')?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
+                  className="text-foreground hover:text-electric-blue transition-colors whitespace-nowrap text-sm"
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* CTA Button */}
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <Button 
               variant="hero" 
-              size="lg"
+              size="sm"
               onClick={() => document.getElementById('ai-chat')?.scrollIntoView({ behavior: 'smooth' })}
             >
-              Start Free Chat
+              Start Chat
             </Button>
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden"
+            className="lg:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -76,8 +90,8 @@ const Navigation = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t border-border">
-              <div className="flex flex-col space-y-4 pt-4">
+          <div className="lg:hidden mt-4 pb-4 border-t border-border">
+              <div className="flex flex-col space-y-3 pt-4 max-h-96 overflow-y-auto">
               {navItems.map((item) => (
                 <button
                   key={item.name}
@@ -89,13 +103,21 @@ const Navigation = () => {
                       document.getElementById('ai-chat')?.scrollIntoView({ behavior: 'smooth' });
                     } else if (item.href === '/forex') {
                       document.getElementById('forex-dashboard')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/market-summary') {
+                      document.getElementById('ai-market-summary')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/expense-tracker') {
+                      document.getElementById('expense-breakdown')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/economic-calendar') {
+                      document.getElementById('economic-calendar')?.scrollIntoView({ behavior: 'smooth' });
+                    } else if (item.href === '/goal-tracker') {
+                      document.getElementById('goal-tracker')?.scrollIntoView({ behavior: 'smooth' });
                     } else if (item.href === '/risk-monitor') {
                       document.getElementById('risk-monitor')?.scrollIntoView({ behavior: 'smooth' });
                     } else if (item.href === '/contact') {
                       document.getElementById('booking-form')?.scrollIntoView({ behavior: 'smooth' });
                     }
                   }}
-                  className="text-foreground hover:text-electric-blue transition-colors text-left"
+                  className="text-foreground hover:text-electric-blue transition-colors text-left text-sm py-2"
                 >
                   {item.name}
                 </button>

@@ -180,19 +180,21 @@ const EconomicEventCalendar = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h4 className="font-semibold text-foreground mb-2">High Impact Events</h4>
+                <h4 className="font-semibold text-foreground mb-2">High Impact Events (August 2025)</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• US GDP and Employment data could drive USD strength</li>
-                  <li>• RBI policy meeting crucial for INR direction</li>
-                  <li>• ECB rate decision may create cross-currency effects</li>
+                  <li>• US GDP revision and employment data driving dollar strength</li>
+                  <li>• RBI policy meeting expected to maintain status quo</li>
+                  <li>• ECB dovish stance continuing to weaken EUR</li>
+                  <li>• Global tech earnings driving market volatility</li>
                 </ul>
               </div>
               <div>
                 <h4 className="font-semibold text-foreground mb-2">Trading Recommendations</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>• Monitor USD/INR volatility around 83.20-84.00</li>
-                  <li>• Consider hedging positions before RBI announcement</li>
-                  <li>• Watch for breakout opportunities post-US employment data</li>
+                  <li>• Monitor USD/INR breakout above 84.50 resistance</li>
+                  <li>• Consider long positions in Indian tech stocks</li>
+                  <li>• Watch crypto momentum following Bitcoin ETF inflows</li>
+                  <li>• Hedge exposure before Fed policy shifts in September</li>
                 </ul>
               </div>
             </div>

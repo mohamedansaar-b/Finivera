@@ -127,7 +127,7 @@ Entertainment: 800"
                 Expense Overview
               </CardTitle>
               <CardDescription className="text-muted-foreground">
-                Total Monthly Expenses: ₹{totalExpenses.toLocaleString()}
+                {showResults ? `Total Monthly Expenses: ₹${totalExpenses.toLocaleString()}` : 'Upload data to view expenses'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -153,8 +153,10 @@ Entertainment: 800"
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                  Upload your expense data to see the breakdown
+                <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground">
+                  <Upload className="h-16 w-16 text-muted-foreground mb-4" />
+                  <p className="text-lg font-medium">No Files or Expenses Uploaded</p>
+                  <p className="text-sm">Please upload your expense data above to see the breakdown</p>
                 </div>
               )}
             </CardContent>

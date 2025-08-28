@@ -29,38 +29,7 @@ interface Goal {
   status: 'on-track' | 'behind' | 'ahead' | 'completed';
 }
 
-const initialGoals: Goal[] = [
-  {
-    id: '1',
-    title: 'Emergency Fund',
-    targetAmount: 500000,
-    currentAmount: 325000,
-    targetDate: '2024-12-31',
-    category: 'Emergency',
-    monthlyContribution: 25000,
-    status: 'on-track'
-  },
-  {
-    id: '2',
-    title: 'Home Down Payment',
-    targetAmount: 2000000,
-    currentAmount: 800000,
-    targetDate: '2025-06-30',
-    category: 'Property',
-    monthlyContribution: 50000,
-    status: 'behind'
-  },
-  {
-    id: '3',
-    title: 'Vacation Fund',
-    targetAmount: 150000,
-    currentAmount: 120000,
-    targetDate: '2024-05-15',
-    category: 'Lifestyle',
-    monthlyContribution: 10000,
-    status: 'ahead'
-  }
-];
+const initialGoals: Goal[] = [];
 
 const goalCategories = [
   'Emergency',
@@ -118,15 +87,25 @@ const FinancialGoalTracker = () => {
   const getAdjustmentSuggestion = (goal: Goal) => {
     const progress = calculateProgress(goal.currentAmount, goal.targetAmount);
     const monthsRemaining = calculateMonthsRemaining(goal.targetDate);
-    const requiredMonthly = (goal.targetAmount - goal.currentAmount) / monthsRemaining;
+    const requiredMonthly = Math.max((goal.targetAmount - goal.currentAmount) / Math.max(monthsRemaining, 1), 0);
+    
+    const suggestions = [
+      "Consider investing in SIP mutual funds for better returns",
+      "Set up automatic transfers to maintain discipline",
+      "Review and cut unnecessary expenses to boost savings",
+      "Explore high-yield savings accounts for better interest",
+      "Consider tax-saving investment options like ELSS or PPF",
+      "Track progress monthly and adjust contributions as needed"
+    ];
     
     if (goal.monthlyContribution < requiredMonthly) {
       const increase = requiredMonthly - goal.monthlyContribution;
-      return `Increase monthly contribution by ₹${increase.toLocaleString()} to stay on track`;
+      return `AI suggests: Increase monthly contribution by ₹${increase.toLocaleString()} to stay on track. ${suggestions[Math.floor(Math.random() * suggestions.length)]}`;
     } else if (progress > 80) {
-      return 'You\'re doing great! Consider maintaining current contributions';
+      return `AI insights: You're ahead of schedule! ${suggestions[Math.floor(Math.random() * suggestions.length)]}`;
     }
-    return 'Continue with current plan';
+    
+    return `AI recommendation: ${suggestions[Math.floor(Math.random() * suggestions.length)]}`;
   };
 
   const handleAddGoal = () => {

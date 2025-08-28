@@ -15,57 +15,57 @@ import {
 
 const marketData = {
   forex: [
-    { pair: 'USD/INR', current: 83.45, change: '+0.32%', trend: 'up', signal: 'Buy' },
-    { pair: 'EUR/USD', current: 1.0892, change: '-0.18%', trend: 'down', signal: 'Hold' },
-    { pair: 'GBP/USD', current: 1.2756, change: '+0.09%', trend: 'up', signal: 'Buy' },
-    { pair: 'USD/JPY', current: 148.32, change: '+0.45%', trend: 'up', signal: 'Strong Buy' }
+    { pair: 'USD/INR', current: 84.15, change: '+0.85%', trend: 'up', signal: 'Buy' },
+    { pair: 'EUR/USD', current: 1.0815, change: '-0.35%', trend: 'down', signal: 'Hold' },
+    { pair: 'GBP/USD', current: 1.3125, change: '+0.42%', trend: 'up', signal: 'Buy' },
+    { pair: 'USD/JPY', current: 146.25, change: '-1.4%', trend: 'down', signal: 'Sell' }
   ],
   stocks: [
-    { symbol: 'NIFTY 50', current: 21875, change: '+1.2%', trend: 'up', signal: 'Buy' },
-    { symbol: 'SENSEX', current: 72394, change: '+0.98%', trend: 'up', signal: 'Buy' },
-    { symbol: 'BANK NIFTY', current: 46532, change: '+2.1%', trend: 'up', signal: 'Strong Buy' },
-    { symbol: 'IT Index', current: 34567, change: '-0.34%', trend: 'down', signal: 'Hold' }
+    { symbol: 'NIFTY 50', current: 24875, change: '+2.8%', trend: 'up', signal: 'Strong Buy' },
+    { symbol: 'SENSEX', current: 81249, change: '+2.5%', trend: 'up', signal: 'Strong Buy' },
+    { symbol: 'BANK NIFTY', current: 52845, change: '+3.7%', trend: 'up', signal: 'Strong Buy' },
+    { symbol: 'IT Index', current: 41250, change: '+1.9%', trend: 'up', signal: 'Buy' }
   ],
   crypto: [
-    { symbol: 'BTC', current: 42350, change: '+3.2%', trend: 'up', signal: 'Buy' },
-    { symbol: 'ETH', current: 2634, change: '+2.8%', trend: 'up', signal: 'Buy' },
-    { symbol: 'SOL', current: 98.45, change: '+5.4%', trend: 'up', signal: 'Strong Buy' },
-    { symbol: 'ADA', current: 0.487, change: '-1.2%', trend: 'down', signal: 'Hold' }
+    { symbol: 'BTC', current: 63450, change: '+4.8%', trend: 'up', signal: 'Strong Buy' },
+    { symbol: 'ETH', current: 3185, change: '+3.2%', trend: 'up', signal: 'Buy' },
+    { symbol: 'SOL', current: 142.75, change: '+7.1%', trend: 'up', signal: 'Strong Buy' },
+    { symbol: 'ADA', current: 0.68, change: '+12.5%', trend: 'up', signal: 'Buy' }
   ]
 };
 
 const opportunities = [
   {
     type: 'Forex',
-    title: 'USD/INR Breakout Opportunity',
-    description: 'Technical analysis suggests USD/INR may test 84.00 resistance. Consider short-term long positions.',
-    timeframe: '3-5 days',
+    title: 'USD/INR Testing Key Resistance',
+    description: 'USD/INR breaking above 84.50 could trigger momentum to 85.20. Monitor for pullback entries.',
+    timeframe: '5-7 days',
     riskLevel: 'Medium',
-    potentialReturn: '0.8-1.2%'
+    potentialReturn: '1.2-1.8%'
   },
   {
     type: 'Stocks',
-    title: 'Banking Sector Rally',
-    description: 'RBI policy stance supports banking stocks. BANK NIFTY showing strong momentum.',
-    timeframe: '1-2 weeks',
-    riskLevel: 'Low',
-    potentialReturn: '3-5%'
+    title: 'Tech Sector Recovery',
+    description: 'IT stocks benefiting from AI boom and stable dollar rates. NIFTY IT showing breakout patterns.',
+    timeframe: '2-3 weeks',
+    riskLevel: 'Medium',
+    potentialReturn: '8-12%'
   },
   {
     type: 'Crypto',
-    title: 'Altcoin Season Beginning',
-    description: 'SOL and other altcoins showing strong relative strength. Bitcoin dominance declining.',
-    timeframe: '2-4 weeks',
+    title: 'Bitcoin ETF Inflows Surge',
+    description: 'Institutional demand driving BTC above $63K. Altcoins following with strong momentum.',
+    timeframe: '3-6 weeks',
     riskLevel: 'High',
-    potentialReturn: '15-25%'
+    potentialReturn: '20-35%'
   },
   {
     type: 'Savings',
-    title: 'High-Yield FD Rates',
-    description: 'Several banks offering 7.5-8% on 1-year FDs. Lock in before rate cuts.',
-    timeframe: '1 year',
+    title: 'Government Bond Opportunity',
+    description: 'Long-term government securities offering 7.8-8.2% yields before potential rate cuts.',
+    timeframe: '10 years',
     riskLevel: 'Very Low',
-    potentialReturn: '7.5-8%'
+    potentialReturn: '7.8-8.2%'
   }
 ];
 
@@ -107,11 +107,9 @@ const AIMarketSummary = () => {
             Real-time market analysis and investment opportunities powered by artificial intelligence
           </p>
           <div className="flex items-center justify-center gap-2 mt-4">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Last updated: 2 minutes ago</span>
-            <Button variant="ghost" size="sm" className="text-electric-blue hover:text-electric-blue/80">
+            <Button variant="ghost" size="sm" className="text-electric-blue hover:text-electric-blue/80" onClick={() => window.location.reload()}>
               <RefreshCw className="h-4 w-4 mr-1" />
-              Refresh
+              Refresh Market Data
             </Button>
           </div>
         </div>
@@ -268,19 +266,19 @@ const AIMarketSummary = () => {
           <CardContent>
             <div className="prose prose-sm max-w-none text-muted-foreground">
               <p className="text-foreground font-medium mb-2">
-                Market Sentiment: <span className="text-chart-green">Bullish</span>
+                Market Sentiment: <span className="text-chart-green">Strongly Bullish</span>
               </p>
               <p className="mb-4">
-                Indian markets continued their upward momentum with NIFTY 50 gaining 1.2% and BANK NIFTY leading with a 2.1% surge. 
-                The banking sector benefited from positive RBI policy expectations and strong quarterly results.
+                Indian markets hit new highs with NIFTY 50 surging 2.8% to 24,875 and SENSEX crossing 81,000 for the first time. 
+                Technology and banking sectors led the rally on strong earnings and positive global cues.
               </p>
               <p className="mb-4">
-                In forex markets, USD/INR showed strength as the dollar gained against most emerging market currencies. 
-                The pair is approaching key resistance at 84.00, which could present trading opportunities.
+                USD/INR broke above 84.15 as the dollar strengthened on Fed policy expectations. 
+                The pair is testing key resistance at 84.50 with potential for further upside toward 85.20.
               </p>
               <p>
-                Cryptocurrency markets are showing renewed strength with Bitcoin holding above $42,000 and altcoins 
-                outperforming. This suggests a potential shift toward risk-on sentiment in the crypto space.
+                Cryptocurrency markets experienced a massive rally with Bitcoin breaking $63,000 and altcoins posting double-digit gains. 
+                Institutional inflows and ETF demand are driving the crypto renaissance of late August 2025.
               </p>
             </div>
           </CardContent>

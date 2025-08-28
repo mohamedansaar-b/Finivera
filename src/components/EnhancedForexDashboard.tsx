@@ -48,17 +48,17 @@ const EnhancedForexDashboard = () => {
   const getBaseRate = (from: string, to: string) => {
     const key = `${from}${to}`;
     const map: Record<string, number> = {
-      USDINR: 83.6,
-      EURUSD: 1.09,
-      GBPUSD: 1.27,
-      USDJPY: 148.3,
-      USDCAD: 1.35,
-      AUDUSD: 0.66,
-      EURINR: 91.3,
-      GBPINR: 106.5,
-      JPYINR: 0.56,
-      CADINR: 62.0,
-      AUDINR: 55.2,
+      USDINR: 84.15,
+      EURUSD: 1.08,
+      GBPUSD: 1.31,
+      USDJPY: 146.25,
+      USDCAD: 1.37,
+      AUDUSD: 0.68,
+      EURINR: 90.88,
+      GBPINR: 110.24,
+      JPYINR: 0.58,
+      CADINR: 61.42,
+      AUDINR: 57.22,
     };
     return map[key] ?? 1.0;
   };
@@ -66,16 +66,16 @@ const EnhancedForexDashboard = () => {
   const toISO = (d: Date) => d.toISOString().slice(0,10);
 
   const generateForexData = (start?: Date, end?: Date, base = 1.0) => {
-    const s = start ? new Date(start) : new Date();
-    const e = end && end > s ? new Date(end) : new Date(s.getTime() + 10 * 24 * 60 * 60 * 1000);
+    const s = start ? new Date(start) : new Date('2025-08-15');
+    const e = end && end > s ? new Date(end) : new Date('2025-08-30');
     const days = Math.ceil((e.getTime() - s.getTime()) / (24 * 60 * 60 * 1000)) + 1;
     let rate = base;
     const data: { date: string; rate: number }[] = [];
     for (let i = 0; i < days; i++) {
       const date = new Date(s.getTime() + i * 24 * 60 * 60 * 1000);
       // simple random walk around base
-      const drift = 0.0002; // ~0.02%
-      const shock = (Math.random() - 0.5) * 0.004; // +-0.2%
+      const drift = 0.0001; // ~0.01%
+      const shock = (Math.random() - 0.5) * 0.005; // +-0.25%
       rate = rate * (1 + drift + shock);
       data.push({ date: toISO(date), rate: Number(rate.toFixed(4)) });
     }
@@ -94,11 +94,11 @@ const EnhancedForexDashboard = () => {
   const volatility: 'low' | 'medium' | 'high' = std < 0.003 ? 'low' : std < 0.007 ? 'medium' : 'high';
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8">
+    <section id="forex-dashboard" className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-foreground mb-4">
-            Enhanced Forex Predictions
+            Forex Prediction
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             AI-powered forex rate predictions with advanced market analysis and volatility tracking

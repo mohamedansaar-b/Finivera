@@ -15,13 +15,27 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <Hero />
-      <AIChat />
-      <EnhancedForexDashboard />
-      <AIMarketSummary />
-      <SmartExpenseBreakdown />
-      <EconomicEventCalendar />
-      <FinancialGoalTracker />
-      <RiskMonitor />
+      <div id="ai-chat">
+        <AIChat />
+      </div>
+      <div id="forex-dashboard">
+        <EnhancedForexDashboard />
+      </div>
+      <div id="ai-market-summary">
+        <AIMarketSummary />
+      </div>
+      <div id="expense-breakdown">
+        <SmartExpenseBreakdown />
+      </div>
+      <div id="economic-calendar">
+        <EconomicEventCalendar />
+      </div>
+      <div id="goal-tracker">
+        <FinancialGoalTracker />
+      </div>
+      <div id="risk-monitor">
+        <RiskMonitor />
+      </div>
       <BookingForm />
       <Footer />
     </div>

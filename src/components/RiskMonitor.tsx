@@ -19,42 +19,42 @@ const RiskMonitor = () => {
     india: {
       name: 'India',
       code: 'IN',
-      gdpGrowth: [7.0, 6.3, 6.8, 7.2, 7.5],
-      currentGdp: 7.5,
+      gdpGrowth: [6.8, 7.2, 7.6, 8.1, 8.4],
+      currentGdp: 8.4,
       riskLevel: 'low',
-      outlook: 'Stable growth expected with strong domestic demand'
+      outlook: 'Strong domestic demand and tech sector boom driving robust growth'
     },
     usa: {
       name: 'United States',
       code: 'US',
-      gdpGrowth: [2.1, 2.5, 2.8, 3.1, 2.9],
-      currentGdp: 2.9,
+      gdpGrowth: [2.8, 2.4, 2.9, 3.2, 3.0],
+      currentGdp: 3.0,
       riskLevel: 'medium',
-      outlook: 'Moderate growth amid inflation concerns'
+      outlook: 'Steady growth amid AI investment surge and labor market resilience'
     },
     china: {
       name: 'China',
       code: 'CN',
-      gdpGrowth: [3.0, 5.2, 4.8, 5.0, 4.5],
-      currentGdp: 4.5,
+      gdpGrowth: [4.5, 4.8, 5.2, 5.0, 4.7],
+      currentGdp: 4.7,
       riskLevel: 'medium',
-      outlook: 'Slowing growth due to property sector challenges'
+      outlook: 'Recovery momentum slowing due to property sector and demographic challenges'
     },
     germany: {
       name: 'Germany',
       code: 'DE',
-      gdpGrowth: [1.8, -0.3, 1.2, 1.8, 2.1],
-      currentGdp: 2.1,
-      riskLevel: 'medium',
-      outlook: 'Energy transition creating short-term headwinds'
+      gdpGrowth: [1.2, 1.8, 2.1, 2.4, 2.2],
+      currentGdp: 2.2,
+      riskLevel: 'low',
+      outlook: 'Green energy transition creating new growth opportunities'
     },
     japan: {
       name: 'Japan',
       code: 'JP',
-      gdpGrowth: [1.7, 1.0, 1.3, 1.5, 1.8],
+      gdpGrowth: [1.2, 0.8, 1.1, 1.5, 1.8],
       currentGdp: 1.8,
-      riskLevel: 'high',
-      outlook: 'Aging population constraining long-term growth'
+      riskLevel: 'medium',
+      outlook: 'Modest recovery driven by tourism revival and tech innovation'
     }
   };
 
