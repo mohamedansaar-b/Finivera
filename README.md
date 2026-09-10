@@ -175,7 +175,7 @@ Potential future enhancements include:
 
 ## 👨‍💻 Developer
 
-### B. Mohamed Ansaar
+### Mohamed Ansaar B
 
 **ECE (Data Science) Student | Full Stack Development | AI & Data Science | IoT & Embedded Systems**
 
