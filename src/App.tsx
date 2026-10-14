@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import { createChatThread, getStoredChatThreads } from "@/lib/chatStorage";
+import { createChatThread, initializeChatThreads } from "@/lib/chatStorage";
 
 const queryClient = new QueryClient();
 
@@ -29,7 +29,7 @@ const App = () => (
 export default App;
 
 function HomeEntry() {
-  const threads = getStoredChatThreads();
+  const threads = initializeChatThreads();
   const firstThread = threads[0] ?? createChatThread();
 
   return <Navigate to={`/chat/${firstThread.id}`} replace />;

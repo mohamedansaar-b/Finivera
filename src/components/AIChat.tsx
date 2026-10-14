@@ -1,234 +1,239 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport, type UIMessage } from 'ai';
+import { AlertCircle, Bot, MessageSquarePlus, Send, ShieldCheck } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Send, Bot, User } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Conversation, ConversationContent, ConversationEmptyState, ConversationScrollButton } from '@/components/ai-elements/conversation';
+import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
+import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea } from '@/components/ai-elements/prompt-input';
+import { Shimmer } from '@/components/ai-elements/shimmer';
+import { CHAT_THREADS_STORAGE_KEY, createChatThread, ensureChatThread, useStoredChatThreads } from '@/lib/chatStorage';
 
-interface Message {
-  id: string;
-  type: 'user' | 'bot';
-  content: string;
-  timestamp: Date;
+const suggestions = [
+  'How can I start saving money effectively?',
+  'Should I invest in mutual funds or fixed deposits?',
+  'How much emergency fund should I have?',
+  'Can you help me create a monthly budget?',
+];
+
+interface AIChatProps {
+  threadId: string;
 }
 
-const AIChat = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'bot',
-      content: 'Hello! I\'m your AI Financial Advisor. I can help you with investment strategies, savings plans, market insights, and more. How can I assist you today?',
-      timestamp: new Date()
-    }
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+const getReadableError = (error: Error | undefined) => {
+  if (!error) return null;
+  const message = error.message.replace(/^Error:\s*/i, '').trim();
+  if (/failed to fetch|networkerror|load failed/i.test(message)) {
+    return 'Could not connect to the advisor. Check your connection and try again.';
+  }
+  return message || 'The advisor could not answer that message. Please try again.';
+};
 
-  const getFinancialAdviceResponse = (message: string): string => {
-    const lowerMessage = message.toLowerCase();
-    
-    // Specific prompts from homepage
-    if (lowerMessage.includes('invest ₹10,000') || lowerMessage.includes('invest 10,000')) {
-      return "For ₹10,000, consider these options: 1) Start a SIP in diversified equity mutual funds (₹5,000) for long-term growth, 2) Put ₹3,000 in a liquid fund for emergency access, 3) Invest ₹2,000 in ELSS funds for tax savings. This balanced approach provides growth potential while maintaining some liquidity.";
+const AIChat = ({ threadId }: AIChatProps) => {
+  const navigate = useNavigate();
+  const { threads, setThreads, persistMessages } = useStoredChatThreads(threadId);
+  const initialMessages = useMemo(() => ensureChatThread(threadId).messages, [threadId]);
+  const [input, setInput] = useState('');
+  const [sendError, setSendError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const wasBusy = useRef(false);
+  const activeThread = threads.find((thread) => thread.id === threadId);
+  const chatApi = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+  const chat = useChat({
+    id: threadId,
+    messages: initialMessages,
+    transport: new DefaultChatTransport({
+      api: chatApi,
+      headers: {
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: { threadId },
+    }),
+    onError: (error) => setSendError(getReadableError(error)),
+  });
+  const { messages, sendMessage, status, error, regenerate, stop, clearError } = chat;
+  const isBusy = status === 'submitted' || status === 'streaming';
+  const visibleError = sendError ?? getReadableError(error);
+
+  useEffect(() => {
+    persistMessages(messages);
+  }, [messages, status, persistMessages]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [threadId]);
+
+  useEffect(() => {
+    if (wasBusy.current && !isBusy) inputRef.current?.focus();
+    wasBusy.current = isBusy;
+  }, [isBusy]);
+
+  const startNewConversation = useCallback(() => {
+    const nextThread = createChatThread();
+    setThreads((current) => {
+      const next = [nextThread, ...current];
+      try {
+        window.localStorage.setItem(CHAT_THREADS_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        toast.error('This browser could not save the new conversation.');
+      }
+      return next;
+    });
+    setSendError(null);
+    navigate(`/chat/${nextThread.id}`);
+  }, [navigate, setThreads]);
+
+  const submitMessage = useCallback(async (text: string) => {
+    const cleaned = text.trim();
+    if (!cleaned || isBusy) return;
+
+    setInput('');
+    setSendError(null);
+    clearError();
+    inputRef.current?.focus();
+    try {
+      await sendMessage({ text: cleaned });
+    } catch (sendFailure) {
+      setInput(cleaned);
+      setSendError(getReadableError(sendFailure instanceof Error ? sendFailure : undefined));
     }
-    
-    if (lowerMessage.includes('savings plan') && lowerMessage.includes('student')) {
-      return "For Indian students, I recommend: 1) Open a zero-balance savings account with good digital banking features, 2) Start a recurring deposit of ₹500-1000 monthly, 3) Use student-friendly apps like CRED or Jupiter for expense tracking, 4) Consider a small SIP in large-cap mutual funds (₹500/month) to learn about investments early.";
-    }
-    
-    if (lowerMessage.includes('sip') && lowerMessage.includes('explain')) {
-      return "SIP (Systematic Investment Plan) allows you to invest a fixed amount regularly in mutual funds, typically monthly. Benefits: 1) Rupee cost averaging - you buy more units when prices are low, 2) Disciplined investing habit, 3) Power of compounding over time, 4) No need to time the market. Start with as little as ₹500/month in diversified equity funds for long-term wealth creation.";
-    }
-    
-    if (lowerMessage.includes('market outlook') || lowerMessage.includes('current market')) {
-      return "The Indian markets are influenced by global factors, domestic policies, and economic indicators. Key trends: 1) IT sector facing challenges due to global slowdown, 2) Banking and financial services showing resilience, 3) Infrastructure and renewable energy sectors have long-term potential. For individual investors, focus on long-term SIPs rather than market timing.";
-    }
-    
-    // General financial advice based on keywords
-    if (lowerMessage.includes('saving') || lowerMessage.includes('save money')) {
-      return "Start by tracking your income and expenses to understand your spending habits. Set a monthly savings goal—ideally 20% of your income—and automate transfers to a savings account. Also, reduce unnecessary expenses and prioritize needs over wants.";
-    }
-    
-    if (lowerMessage.includes('mutual fund') || lowerMessage.includes('fixed deposit')) {
-      return "It depends on your financial goals and risk tolerance. Fixed deposits offer guaranteed returns with low risk, while mutual funds have higher potential returns but come with market risk. If you're investing for the long term and can tolerate some risk, mutual funds may be suitable.";
-    }
-    
-    if (lowerMessage.includes('emergency fund')) {
-      return "An ideal emergency fund should cover 3 to 6 months of your essential expenses—like rent, groceries, and utility bills. This ensures you're financially prepared for unexpected situations like job loss or medical emergencies.";
-    }
-    
-    if (lowerMessage.includes('budget') || lowerMessage.includes('budgeting')) {
-      return "First, list your monthly income sources. Then categorize your expenses into essentials (rent, food, bills), savings, and discretionary (shopping, entertainment). Use the 50/30/20 rule as a guideline: 50% on needs, 30% on wants, and 20% on savings.";
-    }
-    
-    if (lowerMessage.includes('retirement') || lowerMessage.includes('retire')) {
-      return "The best time to start is now! The earlier you begin, the more you benefit from compounding. Even small amounts saved early can grow significantly over time. Use tools like SIPs, PPF, or NPS to build your retirement corpus.";
-    }
-    
-    if (lowerMessage.includes('debt') || lowerMessage.includes('loan')) {
-      return "First, list all your debts and interest rates. Focus on clearing high-interest debt first while paying minimums on others. Consider the snowball or avalanche method. Avoid new debt, cut back on expenses, and increase your income if possible.";
-    }
-    
-    if (lowerMessage.includes('credit score')) {
-      return "Your credit score reflects your creditworthiness. Lenders use it to decide loan approvals and interest rates. A higher score (above 750) improves your chances of getting loans with better terms. You can maintain a good score by paying EMIs on time and using credit wisely.";
-    }
-    
-    if (lowerMessage.includes('financial plan') || lowerMessage.includes('planning')) {
-      return "Start by identifying your goals—like buying a house, retirement, or children's education. Assign a timeline and estimate the cost for each. Then, calculate how much to save or invest monthly and choose the right investment instruments based on your risk profile and horizon.";
-    }
-    
-    // Default response for other financial queries
-    return "Thank you for your financial question! As your AI advisor, I'm here to help with investments, savings, budgeting, and financial planning. For personalized advice, please share more details about your financial goals, income, and current situation. I can help you create a customized financial roadmap.";
+  }, [clearError, isBusy, sendMessage]);
+
+  const selectSuggestion = (suggestion: string) => {
+    setInput(suggestion);
+    inputRef.current?.focus();
   };
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content: inputMessage,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
-    setIsLoading(true);
-
+  const retry = async () => {
+    setSendError(null);
+    clearError();
     try {
-      const { data, error } = await supabase.functions.invoke('chat', {
-        body: { message: inputMessage }
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Failed to get AI response');
-      }
-
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'bot',
-        content: data.response,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, botMessage]);
-    } catch (error) {
-      // Fallback to predefined financial advice
-      const fallbackResponse = getFinancialAdviceResponse(inputMessage);
-      
-      const botMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'bot',
-        content: fallbackResponse,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, botMessage]);
-    } finally {
-      setIsLoading(false);
+      await regenerate();
+    } catch (retryFailure) {
+      setSendError(getReadableError(retryFailure instanceof Error ? retryFailure : undefined));
     }
   };
 
   return (
-    <section id="ai-chat" className="py-20 bg-gradient-to-b from-background to-secondary/20">
-      <div className="container mx-auto px-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-electric-blue to-neon-teal bg-clip-text text-transparent">
-                AI Financial Advisor
-              </span>
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              Get instant, personalized financial advice powered by advanced AI
-            </p>
-          </div>
+    <section id="ai-chat" className="scroll-mt-24 bg-gradient-to-b from-background to-secondary/20 px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-10 text-center">
+          <h2 className="mb-3 text-3xl font-bold text-foreground sm:text-4xl">
+            <span className="bg-gradient-to-r from-electric-blue to-neon-teal bg-clip-text text-transparent">AI Financial Advisor</span>
+          </h2>
+          <p className="mx-auto max-w-2xl text-base text-muted-foreground sm:text-lg">
+            Get clear, practical guidance for your financial questions.
+          </p>
+        </div>
 
-          <Card className="bg-card/50 backdrop-blur-sm border border-electric-blue/20 shadow-[var(--shadow-elevated)]">
-            {/* Chat Messages */}
-            <div className="h-96 overflow-y-auto p-6 space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+        <div className="grid gap-5 lg:grid-cols-[250px_minmax(0,1fr)]">
+          <aside className="min-w-0 border-b border-border pb-4 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-4" aria-label="Saved conversations">
+            <Button className="mb-4 w-full justify-start" variant="outline" onClick={startNewConversation}>
+              <MessageSquarePlus className="h-4 w-4" />
+              New conversation
+            </Button>
+            <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-normal text-muted-foreground">Your conversations</h3>
+            <nav className="flex max-h-72 flex-col gap-1 overflow-y-auto lg:max-h-[470px]" aria-label="Conversation list">
+              {threads.map((thread) => (
+                <Button
+                  key={thread.id}
+                  variant={thread.id === threadId ? 'secondary' : 'ghost'}
+                  className="h-auto min-h-10 justify-start whitespace-normal px-3 py-2 text-left text-sm"
+                  aria-current={thread.id === threadId ? 'page' : undefined}
+                  onClick={() => navigate(`/chat/${thread.id}`)}
                 >
-                  <div className={`flex gap-3 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      message.type === 'user' 
-                        ? 'bg-electric-blue' 
-                        : 'bg-gradient-to-r from-neon-teal to-electric-blue'
-                    }`}>
-                      {message.type === 'user' ? 
-                        <User className="w-4 h-4 text-white" /> : 
-                        <Bot className="w-4 h-4 text-white" />
-                      }
-                    </div>
-                    <div className={`rounded-lg p-4 ${
-                      message.type === 'user'
-                        ? 'bg-electric-blue text-white'
-                        : 'bg-muted border border-border'
-                    }`}>
-                      <p className="text-sm leading-relaxed">{message.content}</p>
-                    </div>
-                  </div>
-                </div>
+                  <span className="line-clamp-2 break-words">{thread.title}</span>
+                </Button>
               ))}
-              
-              {isLoading && (
-                <div className="flex gap-3 justify-start">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-neon-teal to-electric-blue flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="bg-muted border border-border rounded-lg p-4">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-electric-blue rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-electric-blue rounded-full animate-bounce delay-150"></div>
-                      <div className="w-2 h-2 bg-electric-blue rounded-full animate-bounce delay-300"></div>
-                    </div>
-                  </div>
-                </div>
-              )}
+            </nav>
+          </aside>
+
+          <Card className="flex min-h-[560px] min-w-0 flex-col border border-electric-blue/20 bg-card/70 shadow-[var(--shadow-elevated)]">
+            <div className="flex items-center gap-3 border-b border-border px-5 py-4">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary text-electric-blue" aria-hidden="true">
+                <Bot className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate font-semibold text-foreground">{activeThread?.title ?? 'AI Financial Advisor'}</h3>
+                <p className="text-xs text-muted-foreground">Finivera · Gemini</p>
+              </div>
+              <ShieldCheck className="h-5 w-5 shrink-0 text-neon-teal" aria-label="Secure advisor connection" />
             </div>
 
-            {/* Input Area */}
-            <div className="border-t border-border p-6">
-              <div className="flex gap-3">
-                <Input
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Ask me about investments, savings, market trends..."
-                  className="flex-1 bg-background border-electric-blue/30 focus:border-electric-blue"
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                />
-                <Button 
-                  onClick={handleSendMessage}
-                  disabled={!inputMessage.trim() || isLoading}
-                  variant="hero"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
+            <Conversation className="min-h-0 flex-1" aria-label="Advisor conversation">
+              <ConversationContent className="min-h-full gap-5 px-4 py-5 sm:px-6">
+                {messages.length === 0 ? (
+                  <ConversationEmptyState
+                    className="min-h-64"
+                    icon={<Bot className="h-10 w-10 text-electric-blue" />}
+                    title="What would you like to work on?"
+                    description="Ask about saving, investing, debt, budgeting, or financial goals."
+                  />
+                ) : messages.map((message: UIMessage) => (
+                  <Message from={message.role} key={message.id}>
+                    <MessageContent>
+                      {message.parts.map((part, index) => part.type === 'text' ? (
+                        <MessageResponse key={`${message.id}-${index}`} isAnimating={status === 'streaming' && index === message.parts.length - 1}>
+                          {part.text}
+                        </MessageResponse>
+                      ) : null)}
+                    </MessageContent>
+                  </Message>
+                ))}
+                {status === 'submitted' && <div className="px-2"><Shimmer className="text-sm">Thinking through your question…</Shimmer></div>}
+                {visibleError && (
+                  <div className="flex flex-wrap items-center gap-3 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-foreground" role="alert">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
+                    <span className="min-w-0 flex-1">{visibleError}</span>
+                    {messages.some((message) => message.role === 'user') && (
+                      <Button variant="outline" size="sm" onClick={retry} disabled={isBusy}>Try again</Button>
+                    )}
+                  </div>
+                )}
+              </ConversationContent>
+              <ConversationScrollButton />
+            </Conversation>
+
+            {messages.length === 0 && (
+              <div className="grid grid-cols-1 gap-2 px-4 pb-4 sm:grid-cols-2 sm:px-6">
+                {suggestions.map((suggestion) => (
+                  <Button key={suggestion} variant="glow" className="h-auto min-h-11 justify-start whitespace-normal py-2.5 text-left" onClick={() => selectSuggestion(suggestion)}>
+                    <span className="text-sm">{suggestion}</span>
+                  </Button>
+                ))}
               </div>
+            )}
+
+            <div className="border-t border-border p-4 sm:p-5">
+              <PromptInput
+                className="w-full border-electric-blue/30 bg-background"
+                onSubmit={(message) => void submitMessage(message.text)}
+                onError={({ message }) => toast.error(message)}
+              >
+                <PromptInputTextarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(event) => setInput(event.currentTarget.value)}
+                  placeholder="Ask about saving, investing, or planning…"
+                  aria-label="Message the AI financial advisor"
+                  className="min-h-20 px-4 text-foreground placeholder:text-muted-foreground"
+                />
+                <PromptInputFooter className="justify-between border-t border-border px-3 py-2">
+                  <span className="text-xs text-muted-foreground">Enter to send · Shift+Enter for a new line</span>
+                  <PromptInputSubmit status={visibleError ? 'ready' : status} onStop={stop} disabled={!input.trim() && !isBusy} aria-label={isBusy ? 'Stop response' : 'Send message'}>
+                    {!isBusy && <Send className="h-4 w-4" />}
+                  </PromptInputSubmit>
+                </PromptInputFooter>
+              </PromptInput>
+              <p className="mt-3 text-center text-xs leading-relaxed text-muted-foreground">
+                AI-generated financial information is educational only and is not a guarantee of investment returns.
+              </p>
             </div>
           </Card>
-
-          {/* Quick Prompts */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              "How can I invest ₹10,000?",
-              "Best savings plan for Indian students?",
-              "Explain SIP investments",
-              "Current market outlook?"
-            ].map((prompt, index) => (
-              <Button
-                key={index}
-                variant="glow"
-                className="justify-start h-auto p-4 text-left"
-                onClick={() => setInputMessage(prompt)}
-              >
-                <span className="text-sm">{prompt}</span>
-              </Button>
-            ))}
-          </div>
         </div>
       </div>
     </section>
