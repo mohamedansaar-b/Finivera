@@ -50,6 +50,7 @@ export const saveChatThreads = (threads: ChatThread[]) => {
 };
 
 export const getStoredChatThreads = (): ChatThread[] => readChatThreads();
+export const CHAT_THREADS_STORAGE_KEY = THREADS_STORAGE_KEY;
 
 export const createChatThread = (): ChatThread => ({
   id: crypto.randomUUID(),
@@ -80,7 +81,17 @@ export const ensureChatThread = (id: string): ChatThread => {
 
 export const useStoredChatThreads = (activeThreadId: string) => {
   const [threads, setThreads] = useState<ChatThread[]>(() => {
-    initializeChatThreads();
+    const existingThreads = readChatThreads();
+    if (existingThreads.length === 0) {
+      const initialThread: ChatThread = {
+        id: activeThreadId,
+        title: 'New conversation',
+        updatedAt: new Date().toISOString(),
+        messages: [],
+      };
+      saveChatThreads([initialThread]);
+      return [initialThread];
+    }
     ensureChatThread(activeThreadId);
     return readChatThreads();
   });

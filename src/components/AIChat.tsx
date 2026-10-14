@@ -10,7 +10,7 @@ import { Conversation, ConversationContent, ConversationEmptyState, Conversation
 import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
 import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea } from '@/components/ai-elements/prompt-input';
 import { Shimmer } from '@/components/ai-elements/shimmer';
-import { createChatThread, ensureChatThread, useStoredChatThreads } from '@/lib/chatStorage';
+import { CHAT_THREADS_STORAGE_KEY, createChatThread, ensureChatThread, useStoredChatThreads } from '@/lib/chatStorage';
 
 const suggestions = [
   'How can I start saving money effectively?',
@@ -47,7 +47,10 @@ const AIChat = ({ threadId }: AIChatProps) => {
     messages: initialMessages,
     transport: new DefaultChatTransport({
       api: chatApi,
-      headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+      headers: {
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
       body: { threadId },
     }),
     onError: (error) => setSendError(getReadableError(error)),
@@ -74,7 +77,7 @@ const AIChat = ({ threadId }: AIChatProps) => {
     setThreads((current) => {
       const next = [nextThread, ...current];
       try {
-        window.localStorage.setItem('finivera.chat.threads.v1', JSON.stringify(next));
+        window.localStorage.setItem(CHAT_THREADS_STORAGE_KEY, JSON.stringify(next));
       } catch {
         toast.error('This browser could not save the new conversation.');
       }

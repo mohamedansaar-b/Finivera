@@ -20,9 +20,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       <Hero />
-      <div id="ai-chat">
-        <AIChat key={threadId} threadId={threadId} />
-      </div>
+      <AIChat key={threadId} threadId={threadId} />
       <div id="forex-dashboard">
         <EnhancedForexDashboard />
       </div>
