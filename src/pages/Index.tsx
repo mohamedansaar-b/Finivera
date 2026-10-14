@@ -9,14 +9,19 @@ import FinancialGoalTracker from '@/components/FinancialGoalTracker';
 import RiskMonitor from '@/components/RiskMonitor';
 import BookingForm from '@/components/BookingForm';
 import Footer from '@/components/Footer';
+import { Navigate, useParams } from 'react-router-dom';
 
 const Index = () => {
+  const { threadId } = useParams<{ threadId: string }>();
+
+  if (!threadId) return <Navigate to="/" replace />;
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       <Hero />
       <div id="ai-chat">
-        <AIChat />
+        <AIChat key={threadId} threadId={threadId} />
       </div>
       <div id="forex-dashboard">
         <EnhancedForexDashboard />
