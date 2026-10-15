@@ -14,7 +14,9 @@ import { Navigate, useParams } from 'react-router-dom';
 const Index = () => {
   const { threadId } = useParams<{ threadId: string }>();
 
-  if (!threadId) return <Navigate to="/" replace />;
+  if (!threadId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(threadId)) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
