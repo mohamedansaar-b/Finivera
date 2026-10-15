@@ -55,7 +55,7 @@ const AIChat = ({ threadId }: AIChatProps) => {
     }),
     onError: (error) => setSendError(getReadableError(error)),
   });
-  const { messages, sendMessage, status, error, regenerate, stop, clearError } = chat;
+  const { messages, sendMessage, status, error, stop, clearError } = chat;
   const isBusy = status === 'submitted' || status === 'streaming';
   const visibleError = sendError ?? getReadableError(error);
 
