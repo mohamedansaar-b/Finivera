@@ -13,10 +13,10 @@ import { Shimmer } from '@/components/ai-elements/shimmer';
 import { CHAT_THREADS_STORAGE_KEY, createChatThread, ensureChatThread, useStoredChatThreads } from '@/lib/chatStorage';
 
 const suggestions = [
-  'How can I start saving money effectively?',
-  'Should I invest in mutual funds or fixed deposits?',
-  'How much emergency fund should I have?',
-  'Can you help me create a monthly budget?',
+  'How can I invest ₹10,000?',
+  'Best savings plan for Indian students?',
+  'Explain SIP investments',
+  'Current market outlook?',
 ];
 
 interface AIChatProps {
@@ -111,8 +111,14 @@ const AIChat = ({ threadId }: AIChatProps) => {
   const retry = async () => {
     setSendError(null);
     clearError();
+    const lastUserMessage = [...messages].reverse().find((message) => message.role === 'user');
+    const lastUserText = lastUserMessage?.parts
+      .filter((part) => part.type === 'text')
+      .map((part) => part.text)
+      .join('');
+    if (!lastUserMessage || !lastUserText) return;
     try {
-      await regenerate();
+      await sendMessage({ text: lastUserText, messageId: lastUserMessage.id });
     } catch (retryFailure) {
       setSendError(getReadableError(retryFailure instanceof Error ? retryFailure : undefined));
     }
