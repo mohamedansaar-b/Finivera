@@ -58,7 +58,7 @@ serve(async (req) => {
   const isPublicAnonRequest = token === supabaseAnonKey && publishableKey === supabaseAnonKey;
   if (!isPublicAnonRequest) {
     const { data: claimData, error: claimError } = await supabase.auth.getClaims(token);
-    if (claimError || !claimData?.claims || claimData.claims.role !== 'authenticated') {
+    if (claimError || !claimData?.claims || !['anon', 'authenticated'].includes(String(claimData.claims.role))) {
       return jsonResponse({ error: 'This chat request could not be verified. Refresh the page and try again.' }, 401);
     }
   }
