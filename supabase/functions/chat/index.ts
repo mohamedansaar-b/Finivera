@@ -54,8 +54,14 @@ serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
   const token = authorization.slice('Bearer '.length);
-  const { data: claimData, error: claimError } = await supabase.auth.getClaims(token);
-  if (claimError || !claimData?.claims || !['anon', 'authenticated'].includes(String(claimData.claims.role))) {
+  const isPublicAnonRequest = token === supabaseAnonKey;
+  if (!isPublicAnonRequest) {
+    const { data: claimData, error: claimError } = await supabase.auth.getClaims(token);
+    if (claimError || !claimData?.claims || claimData.claims.role !== 'authenticated') {
+      return jsonResponse({ error: 'This chat request could not be verified. Refresh the page and try again.' }, 401);
+    }
+  }
+  if (isPublicAnonRequest && token.length < 32) {
     return jsonResponse({ error: 'This chat request could not be verified. Refresh the page and try again.' }, 401);
   }
 
