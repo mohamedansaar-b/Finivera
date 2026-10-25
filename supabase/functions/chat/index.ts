@@ -16,7 +16,7 @@ const jsonResponse = (body: Record<string, unknown>, status: number) => new Resp
 );
 
 const providerMessage = (error: unknown): string => {
-  const providerError = error as { statusCode?: unknown; responseBody?: unknown };
+  const providerError = error as { statusCode?: unknown; responseBody?: unknown; message?: unknown };
   const status = typeof providerError.statusCode === 'number' ? providerError.statusCode : 0;
 
   if (status === 401 || status === 403) {
@@ -34,7 +34,8 @@ const providerMessage = (error: unknown): string => {
     }
   }
 
-  return 'Gemini could not answer this request. Please check your message and try again.';
+  // TEMP DIAGNOSTIC
+  return `DEBUG: ${String(providerError.message ?? error).slice(0, 300)}`;
 };
 
 serve(async (req) => {
