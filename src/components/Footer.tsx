@@ -1,4 +1,4 @@
-import { Mail, Linkedin, Twitter, Github } from 'lucide-react';
+import { Mail, Linkedin, Github } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -86,21 +86,18 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-border">
           <div className="flex items-center space-x-6 mb-4 md:mb-0">
             <a 
-              href="#" 
+              href="https://www.linkedin.com/in/mohamedansaarb/" 
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-muted-foreground hover:text-electric-blue transition-colors"
               aria-label="LinkedIn"
             >
               <Linkedin className="w-5 h-5" />
             </a>
             <a 
-              href="#" 
-              className="text-muted-foreground hover:text-electric-blue transition-colors"
-              aria-label="Twitter"
-            >
-              <Twitter className="w-5 h-5" />
-            </a>
-            <a 
-              href="#" 
+              href="https://github.com/mohamedansaar-b"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-muted-foreground hover:text-electric-blue transition-colors"
               aria-label="GitHub"
             >

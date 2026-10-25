@@ -165,7 +165,7 @@ const AIChat = ({ threadId }: AIChatProps) => {
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="truncate font-semibold text-foreground">{activeThread?.title ?? 'AI Financial Advisor'}</h3>
-                <p className="text-xs text-muted-foreground">Finivera · Gemini</p>
+                <p className="text-xs text-muted-foreground">Finivera AI Financial Advisor</p>
               </div>
               <ShieldCheck className="h-5 w-5 shrink-0 text-neon-teal" aria-label="Secure advisor connection" />
             </div>
