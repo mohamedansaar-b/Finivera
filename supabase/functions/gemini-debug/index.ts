@@ -7,32 +7,16 @@ serve(async (req) => {
   const apiKey = Deno.env.get('GEMINI_API_KEY');
   if (!apiKey) return new Response(JSON.stringify({ error: 'no key' }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-  const out: Record<string, unknown> = { keyLength: apiKey.length };
-
-  try {
-    const listRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=100', {
-      headers: { 'x-goog-api-key': apiKey },
+  const results: Record<string, unknown> = {};
+  for (const model of ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-flash-latest']) {
+    const testRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: 'POST',
+      headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: 'Say OK' }] }] }),
     });
-    const listBody = await listRes.text();
-    out.listStatus = listRes.status;
-    try {
-      const parsed = JSON.parse(listBody) as { models?: { name?: string }[] };
-      out.models = parsed.models?.map((m) => m.name) ?? listBody.slice(0, 500);
-    } catch {
-      out.listBody = listBody.slice(0, 500);
-    }
-  } catch (error) {
-    out.listError = String(error);
+    const testBody = await testRes.text();
+    results[model] = { status: testRes.status, body: testBody.slice(0, 400) };
   }
 
-  const testRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
-    method: 'POST',
-    headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts: [{ text: 'Say OK' }] }] }),
-  });
-  const testBody = await testRes.text();
-  out.testStatus = testRes.status;
-  out.testBody = testBody.slice(0, 800);
-
-  return new Response(JSON.stringify(out), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify(results), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 });
