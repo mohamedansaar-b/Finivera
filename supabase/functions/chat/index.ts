@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
-import { google } from 'npm:@ai-sdk/google@4';
+import { createGoogle } from 'npm:@ai-sdk/google@4';
 import { convertToModelMessages, streamText, validateUIMessages } from 'npm:ai@7';
 
 const MODEL_ID = 'gemini-3.8-flash';
@@ -34,8 +34,7 @@ const providerMessage = (error: unknown): string => {
     }
   }
 
-  // TEMP DIAGNOSTIC
-  return `DEBUG: ${String(providerError.message ?? error).slice(0, 300)}`;
+  return 'Gemini could not answer this request. Please check your message and try again.';
 };
 
 serve(async (req) => {
@@ -126,7 +125,8 @@ serve(async (req) => {
   }
 
   try {
-    const model = google(MODEL_ID, { apiKey });
+    const provider = createGoogle({ apiKey });
+    const model = provider(MODEL_ID);
     const result = streamText({
       model,
       system: [
