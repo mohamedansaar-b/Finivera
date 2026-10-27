@@ -8,14 +8,33 @@ serve(async (req) => {
   if (!apiKey) return new Response(JSON.stringify({ error: 'no key' }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   const results: Record<string, unknown> = {};
-  for (const model of ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-flash-latest']) {
+  for (const model of ['gemini-3.8-flash']) {
     const testRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: 'Say OK' }] }] }),
     });
     const testBody = await testRes.text();
-    results[model] = { status: testRes.status, body: testBody.slice(0, 400) };
+    results[`${model}-nonstream`] = { status: testRes.status, body: testBody.slice(0, 400) };
+
+    const streamRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
+      method: 'POST',
+      headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: 'Say OK' }] }] }),
+    });
+    let streamTextResult = '';
+    const reader = streamRes.body?.getReader();
+    if (reader) {
+      const start = Date.now();
+      while (streamTextResult.length < 400) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        streamTextResult += new TextDecoder().decode(value);
+        if (Date.now() - start > 20000) { streamTextResult += ' [TIMEOUT]'; break; }
+      }
+      await reader.cancel().catch(() => {});
+    }
+    results[`${model}-stream`] = { status: streamRes.status, body: streamTextResult.slice(0, 400) };
   }
 
   return new Response(JSON.stringify(results), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
