@@ -125,8 +125,12 @@ serve(async (req) => {
   }
 
   try {
+    globalThis.addEventListener('unhandledrejection', (event) => {
+      console.error('chat unhandled rejection:', JSON.stringify(String((event as PromiseRejectionEvent).reason)));
+    });
     const provider = createGoogle({ apiKey });
     const model = provider(MODEL_ID);
+    console.error('chat: invoking model', MODEL_ID);
     const result = streamText({
       model,
       system: [
@@ -143,9 +147,13 @@ serve(async (req) => {
     return result.toUIMessageStreamResponse({
       originalMessages: validatedMessages,
       headers: corsHeaders,
-      onError: providerMessage,
+      onError: (error) => {
+        console.error('chat provider error:', JSON.stringify(String(error), Object.getOwnPropertyNames(error as object)));
+        return providerMessage(error);
+      },
     });
   } catch (error) {
+    console.error('chat setup error:', JSON.stringify(String(error), Object.getOwnPropertyNames(error as object)));
     return jsonResponse({ error: providerMessage(error) }, 502);
   }
 });
