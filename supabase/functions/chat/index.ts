@@ -4,7 +4,7 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createGoogle } from 'npm:@ai-sdk/google@4';
 import { convertToModelMessages, streamText, validateUIMessages } from 'npm:ai@7';
 
-const MODEL_ID = 'gemini-3.8-flash';
+const MODEL_ID = 'gemini-3.6-flash';
 const MAX_MESSAGES = 40;
 const MAX_TOTAL_CHARACTERS = 20_000;
 const MAX_MESSAGE_CHARACTERS = 5_000;
@@ -22,8 +22,7 @@ const providerMessage = (error: unknown): string => {
   if (status === 401 || status === 403) {
     return 'Gemini could not authorize this request. Check that the saved API key is active and has Gemini API access.';
   }
-  if (status === 429) return 'Gemini is receiving too many requests right now. Please wait a moment and try again.';
-  if (status >= 500) return 'Gemini is temporarily unavailable. Please try again shortly.';
+  if (status === 429 || status === 503) return 'The advisor is receiving more requests than it can handle right now. Please wait a moment and try again.';
 
   if (typeof providerError.responseBody === 'string') {
     try {
