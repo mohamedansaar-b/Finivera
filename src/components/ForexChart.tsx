@@ -45,7 +45,7 @@ const chartConfig = {
           dataKey="rate" 
           stroke="hsl(var(--electric-blue))" 
           strokeWidth={3}
-          dot={{ fill: 'hsl(var(--electric-blue))', strokeWidth: 2, r: 4 }}
+          dot={data.length > 40 ? false : { fill: 'hsl(var(--electric-blue))', strokeWidth: 2, r: 3 }}
           activeDot={{ r: 6, stroke: 'hsl(var(--electric-blue))', strokeWidth: 2 }}
         />
       </LineChart>
