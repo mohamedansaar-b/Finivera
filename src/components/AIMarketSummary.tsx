@@ -1,286 +1,181 @@
+import { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  Bitcoin, 
-  BarChart3, 
-  Lightbulb,
-  RefreshCw,
-  Clock
-} from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Bitcoin, BarChart3, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
+import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
+import { callFunction, fetchMarketData, type CoinQuote, type ForexLatest, type ForexSeries, type StockQuote } from '@/lib/marketApi';
 
-const marketData = {
-  forex: [
-    { pair: 'USD/INR', current: 84.15, change: '+0.85%', trend: 'up', signal: 'Buy' },
-    { pair: 'EUR/USD', current: 1.0815, change: '-0.35%', trend: 'down', signal: 'Hold' },
-    { pair: 'GBP/USD', current: 1.3125, change: '+0.42%', trend: 'up', signal: 'Buy' },
-    { pair: 'USD/JPY', current: 146.25, change: '-1.4%', trend: 'down', signal: 'Sell' }
-  ],
-  stocks: [
-    { symbol: 'NIFTY 50', current: 24875, change: '+2.8%', trend: 'up', signal: 'Strong Buy' },
-    { symbol: 'SENSEX', current: 81249, change: '+2.5%', trend: 'up', signal: 'Strong Buy' },
-    { symbol: 'BANK NIFTY', current: 52845, change: '+3.7%', trend: 'up', signal: 'Strong Buy' },
-    { symbol: 'IT Index', current: 41250, change: '+1.9%', trend: 'up', signal: 'Buy' }
-  ],
-  crypto: [
-    { symbol: 'BTC', current: 63450, change: '+4.8%', trend: 'up', signal: 'Strong Buy' },
-    { symbol: 'ETH', current: 3185, change: '+3.2%', trend: 'up', signal: 'Buy' },
-    { symbol: 'SOL', current: 142.75, change: '+7.1%', trend: 'up', signal: 'Strong Buy' },
-    { symbol: 'ADA', current: 0.68, change: '+12.5%', trend: 'up', signal: 'Buy' }
-  ]
-};
+interface ForexRow { pair: string; rate: number; change: number | null; date: string }
+interface Summary { sentiment: string; summary: string[]; risks: string[] }
 
-const opportunities = [
-  {
-    type: 'Forex',
-    title: 'USD/INR Testing Key Resistance',
-    description: 'USD/INR breaking above 84.50 could trigger momentum to 85.20. Monitor for pullback entries.',
-    timeframe: '5-7 days',
-    riskLevel: 'Medium',
-    potentialReturn: '1.2-1.8%'
-  },
-  {
-    type: 'Stocks',
-    title: 'Tech Sector Recovery',
-    description: 'IT stocks benefiting from AI boom and stable dollar rates. NIFTY IT showing breakout patterns.',
-    timeframe: '2-3 weeks',
-    riskLevel: 'Medium',
-    potentialReturn: '8-12%'
-  },
-  {
-    type: 'Crypto',
-    title: 'Bitcoin ETF Inflows Surge',
-    description: 'Institutional demand driving BTC above $63K. Altcoins following with strong momentum.',
-    timeframe: '3-6 weeks',
-    riskLevel: 'High',
-    potentialReturn: '20-35%'
-  },
-  {
-    type: 'Savings',
-    title: 'Government Bond Opportunity',
-    description: 'Long-term government securities offering 7.8-8.2% yields before potential rate cuts.',
-    timeframe: '10 years',
-    riskLevel: 'Very Low',
-    potentialReturn: '7.8-8.2%'
-  }
-];
+const PAIRS: [string, string][] = [['USD', 'INR'], ['EUR', 'USD'], ['GBP', 'USD'], ['USD', 'JPY']];
+
+const isoDaysAgo = (d: number) => new Date(Date.now() - d * 86400000).toISOString().slice(0, 10);
+
+const Change = ({ value }: { value: number | null }) => value === null ? <span className="text-sm text-muted-foreground">—</span> : (
+  <span className={`flex items-center gap-1 text-sm ${value >= 0 ? 'text-chart-green' : 'text-destructive'}`}>
+    {value >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+    {value >= 0 ? '+' : ''}{value.toFixed(2)}%
+  </span>
+);
+
+const Spark = ({ data }: { data: { v: number }[] }) => data.length < 2 ? null : (
+  <div className="h-12 mt-2">
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={data}><YAxis hide domain={['dataMin', 'dataMax']} /><Line dataKey="v" dot={false} stroke="hsl(var(--electric-blue))" strokeWidth={2} /></LineChart>
+    </ResponsiveContainer>
+  </div>
+);
+
+const ErrorBox = ({ message }: { message: string }) => (
+  <div role="alert" className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-foreground">
+    <AlertCircle className="h-4 w-4 text-destructive" /> {message}
+  </div>
+);
 
 const AIMarketSummary = () => {
-  const getTrendIcon = (trend: string) => {
-    return trend === 'up' ? 
-      <TrendingUp className="h-4 w-4 text-chart-green" /> : 
-      <TrendingDown className="h-4 w-4 text-destructive" />;
-  };
+  const [forex, setForex] = useState<ForexRow[]>([]);
+  const [stocks, setStocks] = useState<StockQuote[]>([]);
+  const [crypto, setCrypto] = useState<CoinQuote[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
-  const getSignalColor = (signal: string) => {
-    switch (signal) {
-      case 'Strong Buy': return 'bg-chart-green text-white';
-      case 'Buy': return 'bg-chart-green/80 text-white';
-      case 'Hold': return 'bg-warning-orange text-white';
-      case 'Sell': return 'bg-destructive text-white';
-      default: return 'bg-muted text-muted-foreground';
+  const load = useCallback(async () => {
+    setLoading(true);
+    const nextErrors: Record<string, string> = {};
+    const [fx, st, cr] = await Promise.allSettled([
+      Promise.all(PAIRS.map(async ([b, q]) => {
+        const s = await fetchMarketData<ForexSeries>({ dataset: 'forex-series', base: b, symbols: q, start: isoDaysAgo(10), end: isoDaysAgo(0) });
+        const pts = Object.entries(s.rates).sort(([a], [c]) => a.localeCompare(c)).map(([date, r]) => ({ date, rate: r[q] }));
+        const last = pts[pts.length - 1];
+        const prev = pts[pts.length - 2];
+        return { pair: `${b}/${q}`, rate: last.rate, date: last.date, change: prev ? ((last.rate - prev.rate) / prev.rate) * 100 : null };
+      })),
+      fetchMarketData<StockQuote[]>({ dataset: 'stocks', range: '1mo' }),
+      fetchMarketData<CoinQuote[]>({ dataset: 'crypto' }),
+    ]);
+    if (fx.status === 'fulfilled') setForex(fx.value); else nextErrors.forex = 'Exchange rates are unavailable right now.';
+    if (st.status === 'fulfilled') setStocks(st.value); else nextErrors.stocks = 'Stock index data is unavailable right now.';
+    if (cr.status === 'fulfilled') setCrypto(cr.value); else nextErrors.crypto = 'Crypto prices are unavailable right now (provider rate limit or outage).';
+    setErrors(nextErrors);
+    setFetchedAt(new Date());
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const generateSummary = async () => {
+    setSummaryLoading(true);
+    setSummaryError(null);
+    try {
+      const payload = {
+        retrievedAt: new Date().toISOString(),
+        forex: forex.map((f) => ({ pair: f.pair, rate: f.rate, dayChangePct: f.change, date: f.date, source: 'ECB' })),
+        stocks: stocks.map((s) => ({ name: s.name, price: s.price, currency: s.currency, changePct: s.changePercent, asOf: s.marketTime, source: 'Yahoo Finance' })),
+        crypto: crypto.map((c) => ({ name: c.name, priceUsd: c.current_price, change24hPct: c.price_change_percentage_24h, asOf: c.last_updated, source: 'CoinGecko' })),
+      };
+      setSummary(await callFunction<Summary>('market-summary', { kind: 'daily-summary', payload }));
+    } catch (e) {
+      setSummaryError(e instanceof Error ? e.message : 'Could not generate the summary.');
+    } finally {
+      setSummaryLoading(false);
     }
   };
 
-  const getRiskColor = (risk: string) => {
-    switch (risk) {
-      case 'Very Low': return 'bg-chart-green text-white';
-      case 'Low': return 'bg-chart-green/80 text-white';
-      case 'Medium': return 'bg-warning-orange text-white';
-      case 'High': return 'bg-destructive text-white';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
+  const hasData = forex.length + stocks.length + crypto.length > 0;
 
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-foreground mb-4">
-            AI-Generated Market Summary
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Real-time market analysis and investment opportunities powered by artificial intelligence
-          </p>
-          <div className="flex items-center justify-center gap-2 mt-4">
-            <Button variant="ghost" size="sm" className="text-electric-blue hover:text-electric-blue/80" onClick={() => window.location.reload()}>
-              <RefreshCw className="h-4 w-4 mr-1" />
-              Refresh Market Data
+          <h2 className="text-3xl font-bold text-foreground mb-4">AI-Generated Market Summary</h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Retrieved market data, with AI analysis generated only from those figures</p>
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
+            {fetchedAt && <span>Fetched {fetchedAt.toLocaleString()}</span>}
+            <Button variant="ghost" size="sm" className="text-electric-blue" onClick={() => void load()} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh Market Data
             </Button>
           </div>
         </div>
 
-        {/* Market Data Tabs */}
         <Tabs defaultValue="forex" className="mb-12">
           <TabsList className="grid w-full grid-cols-3 bg-secondary/50">
-            <TabsTrigger value="forex" className="data-[state=active]:bg-electric-blue data-[state=active]:text-primary-foreground">
-              <DollarSign className="h-4 w-4 mr-2" />
-              Forex
-            </TabsTrigger>
-            <TabsTrigger value="stocks" className="data-[state=active]:bg-electric-blue data-[state=active]:text-primary-foreground">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Stocks
-            </TabsTrigger>
-            <TabsTrigger value="crypto" className="data-[state=active]:bg-electric-blue data-[state=active]:text-primary-foreground">
-              <Bitcoin className="h-4 w-4 mr-2" />
-              Crypto
-            </TabsTrigger>
+            <TabsTrigger value="forex"><DollarSign className="h-4 w-4 mr-2" />Forex</TabsTrigger>
+            <TabsTrigger value="stocks"><BarChart3 className="h-4 w-4 mr-2" />Stocks</TabsTrigger>
+            <TabsTrigger value="crypto"><Bitcoin className="h-4 w-4 mr-2" />Crypto</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="forex">
+          <TabsContent value="forex" className="space-y-3">
+            {errors.forex && <ErrorBox message={errors.forex} />}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {marketData.forex.map((item, index) => (
-                <Card key={index} className="bg-gradient-card border-border">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-foreground">{item.pair}</span>
-                      {getTrendIcon(item.trend)}
-                    </div>
-                    <div className="text-2xl font-bold text-foreground mb-1">
-                      {item.current}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-sm ${item.trend === 'up' ? 'text-chart-green' : 'text-destructive'}`}>
-                        {item.change}
-                      </span>
-                      <Badge className={getSignalColor(item.signal)}>
-                        {item.signal}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
+              {forex.map((f) => (
+                <Card key={f.pair} className="bg-gradient-card border-border"><CardContent className="p-4">
+                  <div className="font-semibold text-foreground mb-2">{f.pair}</div>
+                  <div className="text-2xl font-bold text-foreground mb-1">{f.rate.toLocaleString(undefined, { maximumFractionDigits: 4 })}</div>
+                  <Change value={f.change} />
+                  <p className="text-xs text-muted-foreground mt-2">ECB reference rate · {f.date}</p>
+                </CardContent></Card>
               ))}
             </div>
           </TabsContent>
 
-          <TabsContent value="stocks">
+          <TabsContent value="stocks" className="space-y-3">
+            {errors.stocks && <ErrorBox message={errors.stocks} />}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {marketData.stocks.map((item, index) => (
-                <Card key={index} className="bg-gradient-card border-border">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-foreground">{item.symbol}</span>
-                      {getTrendIcon(item.trend)}
-                    </div>
-                    <div className="text-2xl font-bold text-foreground mb-1">
-                      {item.current.toLocaleString()}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-sm ${item.trend === 'up' ? 'text-chart-green' : 'text-destructive'}`}>
-                        {item.change}
-                      </span>
-                      <Badge className={getSignalColor(item.signal)}>
-                        {item.signal}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
+              {stocks.map((s) => (
+                <Card key={s.symbol} className="bg-gradient-card border-border"><CardContent className="p-4">
+                  <div className="font-semibold text-foreground mb-2">{s.name}</div>
+                  <div className="text-2xl font-bold text-foreground mb-1">{s.price !== null ? `${s.currency === 'INR' ? '₹' : ''}${s.price.toLocaleString()}` : '—'}</div>
+                  <Change value={s.changePercent} />
+                  <Spark data={s.series.filter((p) => p.close !== null).map((p) => ({ v: p.close as number }))} />
+                  <p className="text-xs text-muted-foreground mt-2">Yahoo Finance · may be delayed · {s.marketTime ? new Date(s.marketTime).toLocaleString() : 'n/a'}</p>
+                </CardContent></Card>
               ))}
             </div>
           </TabsContent>
 
-          <TabsContent value="crypto">
+          <TabsContent value="crypto" className="space-y-3">
+            {errors.crypto && <ErrorBox message={errors.crypto} />}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {marketData.crypto.map((item, index) => (
-                <Card key={index} className="bg-gradient-card border-border">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-foreground">{item.symbol}</span>
-                      {getTrendIcon(item.trend)}
-                    </div>
-                    <div className="text-2xl font-bold text-foreground mb-1">
-                      ${item.current.toLocaleString()}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className={`text-sm ${item.trend === 'up' ? 'text-chart-green' : 'text-destructive'}`}>
-                        {item.change}
-                      </span>
-                      <Badge className={getSignalColor(item.signal)}>
-                        {item.signal}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
+              {crypto.map((c) => (
+                <Card key={c.id} className="bg-gradient-card border-border"><CardContent className="p-4">
+                  <div className="font-semibold text-foreground mb-2">{c.name} <span className="text-muted-foreground uppercase text-xs">{c.symbol}</span></div>
+                  <div className="text-2xl font-bold text-foreground mb-1">${c.current_price.toLocaleString()}</div>
+                  <Change value={c.price_change_percentage_24h} />
+                  <p className="text-xs text-muted-foreground mt-2">24h · Mkt cap ${(c.market_cap / 1e9).toFixed(1)}B</p>
+                  <p className="text-xs text-muted-foreground">CoinGecko · {new Date(c.last_updated).toLocaleString()}</p>
+                </CardContent></Card>
               ))}
             </div>
           </TabsContent>
         </Tabs>
 
-        {/* Investment Opportunities */}
         <Card className="bg-gradient-card border-border">
           <CardHeader>
-            <CardTitle className="text-foreground flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-warning-orange" />
-              AI-Detected Investment Opportunities
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Personalized recommendations based on current market conditions and trends
-            </CardDescription>
+            <CardTitle className="text-foreground flex items-center gap-2"><Sparkles className="h-5 w-5 text-neon-teal" />Today's Market Summary</CardTitle>
+            <CardDescription className="text-muted-foreground">AI-generated analysis based only on the data shown above. Educational, not investment advice.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {opportunities.map((opportunity, index) => (
-                <div key={index} className="p-4 rounded-lg bg-secondary/50 border border-border">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <Badge variant="outline" className="mb-2">
-                        {opportunity.type}
-                      </Badge>
-                      <h4 className="font-semibold text-foreground">{opportunity.title}</h4>
-                    </div>
-                    <Badge className={getRiskColor(opportunity.riskLevel)}>
-                      {opportunity.riskLevel}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {opportunity.description}
-                  </p>
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-4">
-                      <span className="text-muted-foreground">
-                        Timeframe: <span className="text-foreground">{opportunity.timeframe}</span>
-                      </span>
-                    </div>
-                    <span className="text-chart-green font-semibold">
-                      {opportunity.potentialReturn}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Daily Summary */}
-        <Card className="mt-8 bg-gradient-card border-border">
-          <CardHeader>
-            <CardTitle className="text-foreground">Today's Market Summary</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              AI-generated analysis of key market movements and trends
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="prose prose-sm max-w-none text-muted-foreground">
-              <p className="text-foreground font-medium mb-2">
-                Market Sentiment: <span className="text-chart-green">Strongly Bullish</span>
-              </p>
-              <p className="mb-4">
-                Indian markets hit new highs with NIFTY 50 surging 2.8% to 24,875 and SENSEX crossing 81,000 for the first time. 
-                Technology and banking sectors led the rally on strong earnings and positive global cues.
-              </p>
-              <p className="mb-4">
-                USD/INR broke above 84.15 as the dollar strengthened on Fed policy expectations. 
-                The pair is testing key resistance at 84.50 with potential for further upside toward 85.20.
-              </p>
-              <p>
-                Cryptocurrency markets experienced a massive rally with Bitcoin breaking $63,000 and altcoins posting double-digit gains. 
-                Institutional inflows and ETF demand are driving the crypto renaissance of late August 2025.
-              </p>
-            </div>
+          <CardContent className="space-y-4">
+            {!summary && !summaryLoading && (
+              <Button onClick={() => void generateSummary()} disabled={!hasData || loading} className="bg-electric-blue hover:bg-electric-blue/90 text-primary-foreground">Generate AI summary</Button>
+            )}
+            {summaryLoading && <p className="text-sm text-muted-foreground">Finivera AI is analysing the latest figures…</p>}
+            {summaryError && <ErrorBox message={summaryError} />}
+            {summary && (
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p className="text-foreground font-medium">Market sentiment: <span className="text-neon-teal">{summary.sentiment}</span></p>
+                {summary.summary.map((p, i) => <p key={i}>{p}</p>)}
+                {summary.risks.length > 0 && (
+                  <div><h4 className="font-semibold text-foreground mb-1">Risks to watch</h4><ul className="space-y-1">{summary.risks.map((r, i) => <li key={i}>• {r}</li>)}</ul></div>
+                )}
+                <Button variant="outline" size="sm" onClick={() => void generateSummary()}>Regenerate</Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
