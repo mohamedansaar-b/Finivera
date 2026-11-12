@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Clock, User, Mail, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { callFunction } from '@/lib/marketApi';
 
 interface BookingFormData {
   name: string;
@@ -33,7 +34,7 @@ const BookingForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.date || !formData.time) {
+    if (formData.name.trim().length < 2 || !/^\S+@\S+\.\S+$/.test(formData.email) || !formData.date || !formData.time) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -45,15 +46,15 @@ const BookingForm = () => {
     setIsSubmitting(true);
 
     try {
-      // Simulate form submission (replace with actual email service integration)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Here you would integrate with EmailJS, Resend, or similar service
-      // Example: await sendEmail(formData);
-      
+      const result = await callFunction<{ visitorEmail: string; adminEmail: string }>('book-appointment', formData);
+      const emailed = result.visitorEmail === 'sent';
       toast({
-        title: "Appointment Booked!",
-        description: "Your consultation has been scheduled. You'll receive a confirmation email shortly.",
+        title: 'Booking request received',
+        description: emailed
+          ? 'Your request is saved and a confirmation email has been sent to you.'
+          : result.visitorEmail === 'not_configured'
+            ? 'Your request is saved. Email confirmations are not switched on yet; we will reply from bmansaar7680@gmail.com.'
+            : 'Your request is saved, but the confirmation email could not be delivered. We will reply from bmansaar7680@gmail.com.',
       });
 
       // Reset form
@@ -67,7 +68,7 @@ const BookingForm = () => {
     } catch (error) {
       toast({
         title: "Booking Failed",
-        description: "There was an error scheduling your appointment. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error scheduling your appointment. Please try again.",
         variant: "destructive"
       });
     } finally {

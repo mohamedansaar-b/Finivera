@@ -1,237 +1,155 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { Upload, DollarSign, TrendingDown, Lightbulb } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { Upload, DollarSign, Lightbulb, Trash2 } from 'lucide-react';
+import { parseExpenses, totalsByCategory, type Expense } from '@/lib/finance';
 
-const expenseCategories = [
-  { name: 'Food & Dining', value: 2800, color: '#00BFFF' },
-  { name: 'Transportation', value: 1500, color: '#00FFFF' },
-  { name: 'Bills & Utilities', value: 3200, color: '#FFB84D' },
-  { name: 'Shopping', value: 1800, color: '#FF6B6B' },
-  { name: 'Entertainment', value: 800, color: '#4ECDC4' },
-  { name: 'Healthcare', value: 600, color: '#95E1D3' },
-];
+const STORAGE_KEY = 'finivera-expenses-v1';
+const COLORS = ['hsl(var(--electric-blue))', 'hsl(var(--neon-teal))', 'hsl(var(--warning-orange))', 'hsl(var(--destructive))', 'hsl(var(--chart-green))', 'hsl(var(--primary))', 'hsl(var(--muted-foreground))', 'hsl(var(--accent))'];
 
-const moneySavingTips = [
-  {
-    category: 'Food & Dining',
-    tip: 'Cook at home 3 more days per week to save ₹800-1000/month',
-    potential: '₹900'
-  },
-  {
-    category: 'Bills & Utilities',
-    tip: 'Switch to LED bulbs and optimize AC usage to reduce electricity by 15%',
-    potential: '₹480'
-  },
-  {
-    category: 'Shopping',
-    tip: 'Use cashback apps and wait for sales for non-essential purchases',
-    potential: '₹360'
-  }
-];
+const TIPS: Record<string, string> = {
+  'Food & Dining': 'Plan weekly meals and cook at home more often; set a fixed monthly limit for ordering in.',
+  Transportation: 'Combine trips, use public transport or car-pooling for regular routes.',
+  'Bills & Utilities': 'Review subscriptions, mobile/internet plans and electricity use; compare cheaper plans.',
+  Shopping: 'Use a 48-hour wait rule for non-essential purchases and a monthly shopping cap.',
+  Entertainment: 'Cancel unused streaming services and rotate subscriptions instead of keeping all.',
+  Healthcare: 'Check whether health insurance covers recurring costs and use generic medicines where advised.',
+  Education: 'Look for scholarships, free courses or second-hand books before buying new.',
+  Other: 'Label these expenses more specifically so you can see where the money goes.',
+};
+
+const fmt = (n: number) => `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
 const SmartExpenseBreakdown = () => {
-  const [expenseInput, setExpenseInput] = useState('');
-  const [showResults, setShowResults] = useState(false);
+  const [input, setInput] = useState('');
+  const [expenses, setExpenses] = useState<Expense[]>(() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'); } catch { return []; }
+  });
+  const [rejected, setRejected] = useState<string[]>([]);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
-  const handleAnalyze = () => {
-    setShowResults(true);
+  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses)); }, [expenses]);
+
+  const analyze = (text: string) => {
+    const { expenses: parsed, rejected: bad } = parseExpenses(text);
+    setRejected(bad);
+    if (parsed.length) setExpenses((cur) => [...cur, ...parsed]);
+    setInput('');
   };
 
-  const totalExpenses = expenseCategories.reduce((sum, cat) => sum + cat.value, 0);
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0];
-      return (
-        <div className="bg-popover border border-border rounded-lg p-3 shadow-lg">
-          <p className="text-popover-foreground font-medium">{data.name}</p>
-          <p className="text-electric-blue">₹{data.value.toLocaleString()}</p>
-          <p className="text-muted-foreground text-sm">
-            {((data.value / totalExpenses) * 100).toFixed(1)}% of total
-          </p>
-        </div>
-      );
-    }
-    return null;
+  const onFile = async (file?: File) => {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.csv')) { setRejected([`${file.name}: please upload a .csv file`]); return; }
+    analyze(await file.text());
   };
+
+  const filtered = useMemo(() => expenses.filter((e) => {
+    if (!fromDate && !toDate) return true;
+    if (!e.date) return false;
+    return (!fromDate || e.date >= fromDate) && (!toDate || e.date <= toDate);
+  }), [expenses, fromDate, toDate]);
+  const { total, categories } = useMemo(() => totalsByCategory(filtered), [filtered]);
+  const hasDates = expenses.some((e) => e.date);
 
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-foreground mb-4">
-            Smart Expense Breakdown
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Upload your expense data and get AI-powered insights with personalized money-saving suggestions
-          </p>
+          <h2 className="text-3xl font-bold text-foreground mb-4">Smart Expense Breakdown</h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Enter or upload your own expenses to see category totals, percentages and saving ideas. Data stays in this browser.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Input Section */}
           <Card className="bg-gradient-card border-border">
             <CardHeader>
-              <CardTitle className="text-foreground flex items-center gap-2">
-                <Upload className="h-5 w-5 text-electric-blue" />
-                Upload Expense Data
-              </CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Enter your monthly expenses or upload a CSV file for analysis
-              </CardDescription>
+              <CardTitle className="text-foreground flex items-center gap-2"><Upload className="h-5 w-5 text-electric-blue" />Add Expenses</CardTitle>
+              <CardDescription>One per line: "Food: 2800" or CSV "2026-10-01,Swiggy dinner,450"</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="expenses" className="text-foreground">Monthly Expenses</Label>
-                <Textarea
-                  id="expenses"
-                  placeholder="Enter expenses like:
-Food: 2800
-Transport: 1500
-Bills: 3200
-Shopping: 1800
-Entertainment: 800"
-                  value={expenseInput}
-                  onChange={(e) => setExpenseInput(e.target.value)}
-                  className="mt-1 border-border bg-input text-foreground min-h-[120px]"
-                />
+                <Label htmlFor="expenses">Expenses</Label>
+                <Textarea id="expenses" value={input} onChange={(e) => setInput(e.target.value)} placeholder={'Groceries: 2800\nUber: 1500\nElectricity bill: 3200'} className="mt-1 bg-input min-h-[120px]" />
               </div>
               <div>
-                <Label htmlFor="file-upload" className="text-foreground">Or Upload CSV File</Label>
-                <Input
-                  id="file-upload"
-                  type="file"
-                  accept=".csv,.xlsx"
-                  className="mt-1 border-border bg-input text-foreground"
-                />
+                <Label htmlFor="file-upload">Or upload a CSV file (date,description,amount[,category])</Label>
+                <Input id="file-upload" type="file" accept=".csv" className="mt-1 bg-input" onChange={(e) => { void onFile(e.target.files?.[0]); e.target.value = ''; }} />
               </div>
-              <Button 
-                onClick={handleAnalyze}
-                className="w-full bg-electric-blue hover:bg-electric-blue/90 text-primary-foreground"
-              >
-                Analyze Expenses
-              </Button>
+              <Button onClick={() => analyze(input)} disabled={!input.trim()} className="w-full">Analyze Expenses</Button>
+              {rejected.length > 0 && <p className="text-xs text-destructive">Could not read: {rejected.slice(0, 5).join(' | ')}</p>}
+              {expenses.length > 0 && <Button variant="outline" size="sm" onClick={() => { setExpenses([]); setRejected([]); }}><Trash2 className="h-4 w-4 mr-1" />Clear all ({expenses.length})</Button>}
             </CardContent>
           </Card>
 
-          {/* Results Preview */}
           <Card className="bg-gradient-card border-border">
             <CardHeader>
-              <CardTitle className="text-foreground flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-neon-teal" />
-                Expense Overview
-              </CardTitle>
-              <CardDescription className="text-muted-foreground">
-                {showResults ? `Total Monthly Expenses: ₹${totalExpenses.toLocaleString()}` : 'Upload data to view expenses'}
-              </CardDescription>
+              <CardTitle className="text-foreground flex items-center gap-2"><DollarSign className="h-5 w-5 text-neon-teal" />Expense Overview</CardTitle>
+              <CardDescription>{total > 0 ? `Total: ${fmt(total)} across ${filtered.length} entries` : 'No files or expenses have been uploaded.'}</CardDescription>
             </CardHeader>
             <CardContent>
-              {showResults ? (
+              {hasDates && (
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  <Input type="date" aria-label="From date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="bg-input" />
+                  <Input type="date" aria-label="To date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="bg-input" />
+                </div>
+              )}
+              {total > 0 ? (
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie
-                        data={expenseCategories}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={120}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {expenseCategories.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
+                      <Pie data={categories} dataKey="value" nameKey="name" innerRadius={60} outerRadius={120} paddingAngle={3}>
+                        {categories.map((c, i) => <Cell key={c.name} fill={COLORS[i % COLORS.length]} />)}
                       </Pie>
-                      <Tooltip content={<CustomTooltip />} />
+                      <Tooltip contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))' }} formatter={(v: number, n: string) => [`${fmt(v)} (${((v / total) * 100).toFixed(1)}%)`, n]} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
                 <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground">
-                  <Upload className="h-16 w-16 text-muted-foreground mb-4" />
-                  <p className="text-lg font-medium">No Files or Expenses Uploaded</p>
-                  <p className="text-sm">Please upload your expense data above to see the breakdown</p>
+                  <Upload className="h-16 w-16 mb-4" />
+                  <p className="text-lg font-medium">No files or expenses have been uploaded.</p>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Category Breakdown */}
-        {showResults && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            {expenseCategories.map((category) => (
-              <Card key={category.name} className="bg-gradient-card border-border">
-                <CardContent className="p-4">
+        {total > 0 && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {categories.map((c, i) => (
+                <Card key={c.name} className="bg-gradient-card border-border"><CardContent className="p-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">{category.name}</p>
-                      <p className="text-lg font-semibold text-foreground">₹{category.value.toLocaleString()}</p>
-                    </div>
-                    <div 
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: category.color }}
-                    />
+                    <div><p className="text-sm text-muted-foreground">{c.name}</p><p className="text-lg font-semibold text-foreground">{fmt(c.value)}</p></div>
+                    <div className="w-4 h-4 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {((category.value / totalExpenses) * 100).toFixed(1)}% of total
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Money Saving Suggestions */}
-        {showResults && (
-          <Card className="bg-gradient-card border-border">
-            <CardHeader>
-              <CardTitle className="text-foreground flex items-center gap-2">
-                <Lightbulb className="h-5 w-5 text-warning-orange" />
-                Top 3 Money-Saving Suggestions
-              </CardTitle>
-              <CardDescription className="text-muted-foreground">
-                AI-powered recommendations to optimize your spending
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {moneySavingTips.map((tip, index) => (
-                  <div key={index} className="flex items-start gap-4 p-4 rounded-lg bg-secondary/50 border border-border">
-                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-electric-blue text-primary-foreground text-sm font-semibold">
-                      {index + 1}
-                    </div>
+                  <p className="text-xs text-muted-foreground mt-1">{c.percent.toFixed(1)}% of total</p>
+                </CardContent></Card>
+              ))}
+            </div>
+            <Card className="bg-gradient-card border-border">
+              <CardHeader>
+                <CardTitle className="text-foreground flex items-center gap-2"><Lightbulb className="h-5 w-5 text-warning-orange" />Top 3 Money-Saving Suggestions</CardTitle>
+                <CardDescription>Based on your three largest spending categories</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {categories.slice(0, 3).map((c, i) => (
+                  <div key={c.name} className="flex items-start gap-4 p-4 rounded-lg bg-secondary/50 border border-border">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-electric-blue text-primary-foreground text-sm font-semibold">{i + 1}</div>
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="text-xs">
-                          {tip.category}
-                        </Badge>
-                        <Badge className="bg-chart-green text-white text-xs">
-                          Save {tip.potential}/month
-                        </Badge>
-                      </div>
-                      <p className="text-foreground text-sm">{tip.tip}</p>
+                      <div className="flex flex-wrap gap-2 mb-1"><Badge variant="outline">{c.name}</Badge><Badge variant="outline">{fmt(c.value)} · {c.percent.toFixed(1)}%</Badge></div>
+                      <p className="text-sm text-foreground">{TIPS[c.name] ?? TIPS.Other} Cutting this category by 10% would save {fmt(c.value * 0.1)}.</p>
                     </div>
-                    <TrendingDown className="h-4 w-4 text-chart-green" />
                   </div>
                 ))}
-              </div>
-              <div className="mt-6 p-4 rounded-lg bg-chart-green/10 border border-chart-green/20">
-                <p className="text-foreground font-semibold">
-                  Total Potential Savings: ₹1,740/month (₹20,880/year)
-                </p>
-                <p className="text-muted-foreground text-sm mt-1">
-                  Implementing these suggestions could reduce your expenses by 18.9%
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </>
         )}
       </div>
     </section>

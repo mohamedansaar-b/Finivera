@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { monthsUntil, requiredMonthly } from '@/lib/finance';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,8 @@ import {
   CheckCircle, 
   Calendar,
   DollarSign,
-  PiggyBank
+  PiggyBank,
+  Trash2
 } from 'lucide-react';
 
 interface Goal {
@@ -29,7 +31,8 @@ interface Goal {
   status: 'on-track' | 'behind' | 'ahead' | 'completed';
 }
 
-const initialGoals: Goal[] = [];
+const STORAGE_KEY = 'finivera-goals-v1';
+const loadGoals = (): Goal[] => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]'); } catch { return []; } };
 
 const goalCategories = [
   'Emergency',
@@ -42,7 +45,10 @@ const goalCategories = [
 ];
 
 const FinancialGoalTracker = () => {
-  const [goals, setGoals] = useState<Goal[]>(initialGoals);
+  const [goals, setGoals] = useState<Goal[]>(loadGoals);
+  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(goals)); }, [goals]);
+  const updateSaved = (id: string, value: string) => setGoals((cur) => cur.map((g) => g.id === id ? { ...g, currentAmount: Math.max(Number(value) || 0, 0) } : g));
+  const removeGoal = (id: string) => setGoals((cur) => cur.filter((g) => g.id !== id));
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [newGoal, setNewGoal] = useState({
     title: '',
@@ -72,40 +78,29 @@ const FinancialGoalTracker = () => {
     }
   };
 
-  const calculateProgress = (current: number, target: number) => {
-    return Math.min((current / target) * 100, 100);
+  const calculateProgress = (current: number, target: number) => target > 0 ? Math.min((current / target) * 100, 100) : 0;
+  const statusOf = (g: Goal): Goal['status'] => {
+    if (g.currentAmount >= g.targetAmount) return 'completed';
+    const need = requiredMonthly(g.targetAmount, g.currentAmount, g.targetDate);
+    if (g.monthlyContribution >= need * 1.2) return 'ahead';
+    if (g.monthlyContribution >= need) return 'on-track';
+    return 'behind';
   };
 
-  const calculateMonthsRemaining = (targetDate: string) => {
-    const today = new Date();
-    const target = new Date(targetDate);
-    const diffTime = target.getTime() - today.getTime();
-    const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30));
-    return Math.max(diffMonths, 0);
-  };
+  const calculateMonthsRemaining = (targetDate: string) => monthsUntil(targetDate);
 
   const getAdjustmentSuggestion = (goal: Goal) => {
-    const progress = calculateProgress(goal.currentAmount, goal.targetAmount);
-    const monthsRemaining = calculateMonthsRemaining(goal.targetDate);
-    const requiredMonthly = Math.max((goal.targetAmount - goal.currentAmount) / Math.max(monthsRemaining, 1), 0);
-    
-    const suggestions = [
-      "Consider investing in SIP mutual funds for better returns",
-      "Set up automatic transfers to maintain discipline",
-      "Review and cut unnecessary expenses to boost savings",
-      "Explore high-yield savings accounts for better interest",
-      "Consider tax-saving investment options like ELSS or PPF",
-      "Track progress monthly and adjust contributions as needed"
-    ];
-    
-    if (goal.monthlyContribution < requiredMonthly) {
-      const increase = requiredMonthly - goal.monthlyContribution;
-      return `AI suggests: Increase monthly contribution by ₹${increase.toLocaleString()} to stay on track. ${suggestions[Math.floor(Math.random() * suggestions.length)]}`;
-    } else if (progress > 80) {
-      return `AI insights: You're ahead of schedule! ${suggestions[Math.floor(Math.random() * suggestions.length)]}`;
+    const remaining = Math.max(goal.targetAmount - goal.currentAmount, 0);
+    if (remaining === 0) return 'Goal reached. Consider moving these savings into a suitable low-risk option until you use them.';
+    const months = monthsUntil(goal.targetDate);
+    const need = requiredMonthly(goal.targetAmount, goal.currentAmount, goal.targetDate);
+    const r = (n: number) => `₹${Math.ceil(n).toLocaleString('en-IN')}`;
+    if (months === 0) return `The target date has arrived with ${r(remaining)} still remaining. Extend the date or add a lump sum.`;
+    if (goal.monthlyContribution < need) {
+      const monthsAtCurrent = goal.monthlyContribution > 0 ? Math.ceil(remaining / goal.monthlyContribution) : null;
+      return `You need ${r(need)}/month for ${months} months. Increase your contribution by ${r(need - goal.monthlyContribution)}${monthsAtCurrent ? `, or at the current rate you will finish in about ${monthsAtCurrent} months` : ''}. Automating a transfer on payday helps.`;
     }
-    
-    return `AI recommendation: ${suggestions[Math.floor(Math.random() * suggestions.length)]}`;
+    return `Your ${r(goal.monthlyContribution)}/month covers the ${r(need)}/month needed. Keep it up and review progress monthly.`;
   };
 
   const handleAddGoal = () => {
@@ -120,6 +115,7 @@ const FinancialGoalTracker = () => {
         monthlyContribution: Number(newGoal.monthlyContribution) || 0,
         status: 'on-track'
       };
+      if (goal.targetAmount <= 0) return;
       setGoals([...goals, goal]);
       setNewGoal({ title: '', targetAmount: '', targetDate: '', category: '', monthlyContribution: '' });
       setIsAddingGoal(false);
@@ -128,7 +124,7 @@ const FinancialGoalTracker = () => {
 
   const totalGoalsValue = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
   const totalCurrentValue = goals.reduce((sum, goal) => sum + goal.currentAmount, 0);
-  const overallProgress = (totalCurrentValue / totalGoalsValue) * 100;
+  const overallProgress = totalGoalsValue > 0 ? Math.min((totalCurrentValue / totalGoalsValue) * 100, 100) : 0;
 
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8">
@@ -261,6 +257,7 @@ const FinancialGoalTracker = () => {
             const progress = calculateProgress(goal.currentAmount, goal.targetAmount);
             const monthsRemaining = calculateMonthsRemaining(goal.targetDate);
             const suggestion = getAdjustmentSuggestion(goal);
+            const status = statusOf(goal);
 
             return (
               <Card key={goal.id} className="bg-gradient-card border-border">
@@ -272,9 +269,9 @@ const FinancialGoalTracker = () => {
                         {goal.category}
                       </Badge>
                     </div>
-                    <Badge className={getStatusColor(goal.status)}>
-                      {getStatusIcon(goal.status)}
-                      <span className="ml-1">{goal.status.replace('-', ' ')}</span>
+                    <Badge className={getStatusColor(status)}>
+                      {getStatusIcon(status)}
+                      <span className="ml-1">{status.replace('-', ' ')}</span>
                     </Badge>
                   </div>
                 </CardHeader>
@@ -290,7 +287,7 @@ const FinancialGoalTracker = () => {
                     <div className="flex justify-between items-center mt-1">
                       <span className="text-xs text-muted-foreground">{progress.toFixed(1)}% complete</span>
                       <span className="text-xs text-muted-foreground">
-                        ₹{(goal.targetAmount - goal.currentAmount).toLocaleString()} remaining
+                        ₹{Math.max(goal.targetAmount - goal.currentAmount, 0).toLocaleString()} remaining
                       </span>
                     </div>
                   </div>
@@ -310,10 +307,17 @@ const FinancialGoalTracker = () => {
                     </div>
                   </div>
 
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <Label htmlFor={`saved-${goal.id}`} className="text-xs text-muted-foreground">Amount saved so far (₹)</Label>
+                      <Input id={`saved-${goal.id}`} type="number" min={0} value={goal.currentAmount} onChange={(e) => updateSaved(goal.id, e.target.value)} className="h-9 bg-input" />
+                    </div>
+                    <Button variant="outline" size="icon" aria-label={`Delete ${goal.title}`} onClick={() => removeGoal(goal.id)}><Trash2 className="h-4 w-4" /></Button>
+                  </div>
                   <div className="bg-secondary/50 rounded-lg p-3 border border-border">
                     <h4 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
                       <TrendingUp className="h-3 w-3 text-neon-teal" />
-                      AI Recommendation
+                      Smart Insight
                     </h4>
                     <p className="text-xs text-muted-foreground">{suggestion}</p>
                   </div>
