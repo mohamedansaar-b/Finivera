@@ -14,3 +14,4 @@
 - [x] Rewrite BookingForm: real submission via book-appointment, honest email status.
 - [x] Delete gemini-debug function before final deploy.
 - [x] Verify: curl each function, Playwright chat + dashboards, completion report (tested vs needs-credentials).
+- [ ] Recheck chatbot diagnostics: remove input-focus warning, use safe provider-specific errors, and verify live chat turns, context, empty-submit rejection, retry recovery, and new-chat reset.

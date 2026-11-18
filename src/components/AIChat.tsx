@@ -25,7 +25,7 @@ interface AIChatProps {
 
 const getReadableError = (error: Error | undefined) => {
   if (!error) return null;
-  const message = error.message.replace(/^Error:\s*/i, '').trim();
+  const message = error.message.replace(/^Error:\s*/i, '').replace(/\bGemini\b/gi, 'advisor service').trim();
   if (/failed to fetch|networkerror|load failed/i.test(message)) {
     return 'Could not connect to the advisor. Check your connection and try again.';
   }
@@ -38,8 +38,10 @@ const AIChat = ({ threadId }: AIChatProps) => {
   const initialMessages = useMemo(() => ensureChatThread(threadId).messages, [threadId]);
   const [input, setInput] = useState('');
   const [sendError, setSendError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
   const wasBusy = useRef(false);
+  const focusComposer = useCallback(() => {
+    document.getElementById('finivera-chat-input')?.focus();
+  }, []);
   const activeThread = threads.find((thread) => thread.id === threadId);
   const chatApi = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
   const chat = useChat({
@@ -64,13 +66,13 @@ const AIChat = ({ threadId }: AIChatProps) => {
   }, [messages, status, persistMessages]);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, [threadId]);
+    focusComposer();
+  }, [threadId, focusComposer]);
 
   useEffect(() => {
-    if (wasBusy.current && !isBusy) inputRef.current?.focus();
+    if (wasBusy.current && !isBusy) focusComposer();
     wasBusy.current = isBusy;
-  }, [isBusy]);
+  }, [focusComposer, isBusy]);
 
   const startNewConversation = useCallback(() => {
     const nextThread = createChatThread();
@@ -94,18 +96,18 @@ const AIChat = ({ threadId }: AIChatProps) => {
     setInput('');
     setSendError(null);
     clearError();
-    inputRef.current?.focus();
+    focusComposer();
     try {
       await sendMessage({ text: cleaned });
     } catch (sendFailure) {
       setInput(cleaned);
       setSendError(getReadableError(sendFailure instanceof Error ? sendFailure : undefined));
     }
-  }, [clearError, isBusy, sendMessage]);
+  }, [clearError, focusComposer, isBusy, sendMessage]);
 
   const selectSuggestion = (suggestion: string) => {
     setInput(suggestion);
-    inputRef.current?.focus();
+    focusComposer();
   };
 
   const retry = async () => {
@@ -221,7 +223,7 @@ const AIChat = ({ threadId }: AIChatProps) => {
                 onError={({ message }) => toast.error(message)}
               >
                 <PromptInputTextarea
-                  ref={inputRef}
+                  id="finivera-chat-input"
                   value={input}
                   onChange={(event) => setInput(event.currentTarget.value)}
                   placeholder="Ask about saving, investing, or planning…"

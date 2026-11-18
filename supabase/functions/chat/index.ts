@@ -16,24 +16,16 @@ const jsonResponse = (body: Record<string, unknown>, status: number) => new Resp
 );
 
 const providerMessage = (error: unknown): string => {
-  const providerError = error as { statusCode?: unknown; responseBody?: unknown; message?: unknown };
+  const providerError = error as { statusCode?: unknown };
   const status = typeof providerError.statusCode === 'number' ? providerError.statusCode : 0;
 
-  if (status === 401 || status === 403) {
-    return 'Gemini could not authorize this request. Check that the saved API key is active and has Gemini API access.';
-  }
-  if (status === 429 || status === 503) return 'The advisor is receiving more requests than it can handle right now. Please wait a moment and try again.';
-
-  if (typeof providerError.responseBody === 'string') {
-    try {
-      const parsed = JSON.parse(providerError.responseBody) as { error?: { message?: unknown } };
-      if (typeof parsed.error?.message === 'string') return `Gemini request failed: ${parsed.error.message}`;
-    } catch {
-      // Use the safe generic response below when the provider error is not JSON.
-    }
-  }
-
-  return 'Gemini could not answer this request. Please check your message and try again.';
+  if (status === 401) return 'The advisor service could not authorize this request. Ask the site owner to check its secure key.';
+  if (status === 403) return 'The advisor service denied this request. Ask the site owner to check access and usage settings.';
+  if (status === 404) return 'The advisor service is temporarily unavailable. Please try again later.';
+  if (status === 429) return 'The advisor is busy right now. Please wait a moment and try again.';
+  if (status === 400) return 'The advisor could not process this request. Please shorten your message and try again.';
+  if (status >= 500) return 'The advisor service is temporarily unavailable. Please try again later.';
+  return 'I’m temporarily unable to respond. Please try again.';
 };
 
 serve(async (req) => {
@@ -67,7 +59,7 @@ serve(async (req) => {
 
   const apiKey = Deno.env.get('GEMINI_API_KEY');
   if (!apiKey) {
-    return jsonResponse({ error: 'Gemini is not configured yet. Add GEMINI_API_KEY in the project’s secure secrets.' }, 503);
+    return jsonResponse({ error: 'The advisor service is not configured. Ask the site owner to add its secure API key.' }, 503);
   }
 
   const contentLength = Number(req.headers.get('content-length') ?? 0);
@@ -124,12 +116,8 @@ serve(async (req) => {
   }
 
   try {
-    globalThis.addEventListener('unhandledrejection', (event) => {
-      console.error('chat unhandled rejection:', JSON.stringify(String((event as PromiseRejectionEvent).reason)));
-    });
     const provider = createGoogle({ apiKey });
     const model = provider(MODEL_ID);
-    console.error('chat: invoking model', MODEL_ID);
     const result = streamText({
       model,
       system: [
@@ -147,12 +135,15 @@ serve(async (req) => {
       originalMessages: validatedMessages,
       headers: corsHeaders,
       onError: (error) => {
-        console.error('chat provider error:', JSON.stringify(String(error), Object.getOwnPropertyNames(error as object)));
+        const statusCode = (error as { statusCode?: unknown }).statusCode;
+        console.error('chat provider error', { statusCode: typeof statusCode === 'number' ? statusCode : 'unknown' });
         return providerMessage(error);
       },
     });
   } catch (error) {
-    console.error('chat setup error:', JSON.stringify(String(error), Object.getOwnPropertyNames(error as object)));
-    return jsonResponse({ error: providerMessage(error) }, 502);
+    const statusCode = (error as { statusCode?: unknown }).statusCode;
+    const responseStatus = typeof statusCode === 'number' && statusCode >= 400 && statusCode <= 599 ? statusCode : 502;
+    console.error('chat setup error', { statusCode: typeof statusCode === 'number' ? statusCode : 'unknown' });
+    return jsonResponse({ error: providerMessage(error) }, responseStatus);
   }
 });
