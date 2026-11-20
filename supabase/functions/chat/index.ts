@@ -94,6 +94,7 @@ serve(async (req) => {
       return jsonResponse({ error: 'This chat only accepts visitor and advisor messages.' }, 400);
     }
     for (const part of message.parts) {
+      if (message.role === 'assistant' && part.type === 'step-start') continue;
       if (part.type !== 'text') return jsonResponse({ error: 'Please send text messages only.' }, 400);
       const textLength = part.text.length;
       if (textLength > MAX_MESSAGE_CHARACTERS) {

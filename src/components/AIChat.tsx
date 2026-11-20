@@ -25,9 +25,19 @@ interface AIChatProps {
 
 const getReadableError = (error: Error | undefined) => {
   if (!error) return null;
-  const message = error.message.replace(/^Error:\s*/i, '').replace(/\bGemini\b/gi, 'advisor service').trim();
+  let message = error.message.replace(/^Error:\s*/i, '').trim();
+  try {
+    const parsed = JSON.parse(message) as { error?: unknown };
+    if (typeof parsed.error === 'string') message = parsed.error;
+  } catch {
+    // Some network failures are plain text rather than structured responses.
+  }
+  message = message.replace(/\bGemini\b/gi, 'advisor service').trim();
   if (/failed to fetch|networkerror|load failed/i.test(message)) {
     return 'Could not connect to the advisor. Check your connection and try again.';
+  }
+  if (message.startsWith('{') || message.startsWith('[')) {
+    return 'I’m temporarily unable to respond. Please try again.';
   }
   return message || 'The advisor could not answer that message. Please try again.';
 };
